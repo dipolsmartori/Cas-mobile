@@ -1,0 +1,97 @@
+{
+    "attachedImagesCategory": "81",
+    "genesis": {
+        "categories": {
+            "assyTrim": "n13100",
+            "calendar": {
+                "private": "n10100",
+                "public": "n101"
+            },
+            "carModels": "n13101",
+            "data": "n121",
+            "evaluationDataCategory": "n121",
+            "extraFileUpload": {
+                "n13101": [
+                    {
+                        "text": "Add QTX",
+                        "extensions": "qtx",
+                        "group": 0,
+                        "width": 130
+                    },
+                    {
+                        "text": "Add files",
+                        "group": 1,
+                        "width": 130
+                    }
+                ]
+            },
+            "notification": "n10001",
+            "partList": "n111",
+            "usage": "n10000"
+        }
+    },
+    "hyundai": {
+        "categories": {
+            "assyTrim": "m13100",
+            "calendar": {
+                "private": "m10100",
+                "public": "m101"
+            },
+            "carModels": "m13101",
+            "data": "m111",
+            "evaluationDataCategory": "m111",
+            "extraFileUpload": {
+                "m13101": [
+                    {
+                        "text": "Add QTX",
+                        "extensions": "qtx",
+                        "group": 0,
+                        "width": 130
+                    },
+                    {
+                        "text": "Add files",
+                        "group": 1,
+                        "width": 130
+                    }
+                ]
+            },
+            "notification": "m10000",
+            "partList": "m121",
+            "usage": "m10001"
+        }
+    },
+    "kia": {
+        "categories": {
+            "assyTrim": "l14100",
+            "calendar": {
+                "private": "l11100",
+                "public": "l111"
+            },
+            "carModels": "l14101",
+            "data": "l131",
+            "evaluationDataCategory": "l131",
+            "evaluationDatasetCategory": "l13100",
+            "extraFileUpload": {
+                "l14101": [
+                    {
+                        "text": "Add QTX",
+                        "extensions": "qtx",
+                        "group": 0,
+                        "width": 130
+                    },
+                    {
+                        "text": "Add files",
+                        "group": 1,
+                        "width": 130
+                    }
+                ]
+            },
+            "notification": "l10000",
+            "partList": "l121",
+            "usage": "l10001"
+        }
+    },
+    "offlineColor": "#F44336",
+    "onlineColor": "#4CAF50",
+    "logoutTime": 20
+}

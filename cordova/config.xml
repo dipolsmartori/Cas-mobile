@@ -1,0 +1,33 @@
+<?xml version='1.0' encoding='utf-8'?>
+<widget id="org.apache.cordova.hellocordova" version="1.0.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0" xmlns:android="http://schemas.android.com/apk/res/android">
+    <name>CPR</name>
+	<access origin="https://hmgcolor.com" />
+    <allow-navigation href="https://hmgcolor.com/*" />
+    <allow-intent href="https://hmgcolor.com/*" />	
+    <description>
+        A sample Apache Cordova application that responds to the deviceready event.
+    </description>
+    <author email="dev@cordova.apache.org" href="https://cordova.apache.org">
+        Apache Cordova Team
+    </author>
+    <content src="index.html" />
+    <allow-intent href="http://*/*" />
+    <allow-intent href="https://*/*" />
+    <platform name="android">
+        <edit-config file="app/src/main/AndroidManifest.xml" mode="merge" target="/manifest/application">
+            <application android:usesCleartextTraffic="true" />
+        </edit-config>
+        <config-file target="AndroidManifest.xml" parent="/manifest/application">
+            <meta-data android:name="com.google.ar.core" android:value="optional" />
+        </config-file>
+        <icon src="res/icon-ldpi.png" density="ldpi" />
+        <icon src="res/icon-mdpi.png" density="mdpi" />
+        <icon src="res/icon-hdpi.png" density="hdpi" />
+        <icon src="res/icon-xhdpi.png" density="xhdpi" />
+        <icon src="res/icon-xxhdpi.png" density="xxhdpi" />
+        <icon src="res/icon-xxxhdpi.png" density="xxxhdpi" />
+		<preference name="AndroidWindowSplashScreenAnimatedIcon" value="res/icon-xxxhdpi.png" />
+		<preference name="AndroidWindowSplashScreenBackground" value="#FFFFFF" />
+    </platform>
+    <preference name="Hostname" value="hmgcolor.com" />
+</widget>

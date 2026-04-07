@@ -1,0 +1,12 @@
+{
+  "name": "casmobile",
+  "version": "1.0.0",
+  "description": "This folder is primarily a container for the top-level pieces of the application.\r While you can remove some files and folders that this application does not use,\r be sure to read below before deciding what can be deleted and what needs to be\r kept in source control.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC"
+}

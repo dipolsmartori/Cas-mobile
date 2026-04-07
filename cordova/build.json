@@ -1,0 +1,12 @@
+{
+    "android": {
+        "release": {
+            "keystore": "cpr-mobile.keystore",
+            "storePassword": "cprmobile123",
+            "alias": "cpr_alias",
+            "password": "cprmobile123",
+            "keystoreType": "",
+            "packageType": "apk"
+        }
+    }
+}

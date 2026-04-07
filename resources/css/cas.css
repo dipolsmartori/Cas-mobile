@@ -1,0 +1,54 @@
+/* Compact header for project grid in CasMobile */
+.x-dataview {
+    border-top: 1px solid #ccc !important;
+    border-bottom: 1px solid #ccc !important;
+}
+
+
+
+.project-grid .x-gridrow .x-cells-el {
+    height: 74px !important;
+}
+
+.project-grid .x-column-header-inner {
+    padding: 2px 4px 2px;
+}
+
+.x-group-sub-header .x-column-header-inner {
+    padding: 2px 4px 2px 4px;
+}
+
+/* Reduce title wrapper padding */
+.x-gridcolumn-title-wrap-el {
+    padding: 4px 6px;
+}
+
+.x-big .x-gridcolumn-title-wrap-el {
+    padding: 4px 6px;
+}
+
+.x-tab .x-text-el {
+    font-size: 10px !important;
+}
+
+.x-tab .x-button .x-icon-el:before {
+    font-size: 10px !important;
+}
+
+.x-tab.x-has-text.x-icon-align-top .x-icon-el {
+    margin-bottom: 1px !important;
+}
+
+.x-tab.x-has-text .x-inner-el {
+    padding-top: 0;
+    padding-bottom: 3px !important;
+}
+
+/* Ensure bottom tab bar accounts for modern phone safe areas (avoids cutting off at the bottom) */
+.x-tabbar.x-docked-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.x-tabbar.x-docked-bottom .x-tab {
+    min-height: calc(60px + env(safe-area-inset-bottom, 0px));
+}

@@ -1,0 +1,136 @@
+<!DOCTYPE HTML>
+<html manifest="">
+
+<head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=10, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <title>CPR SYSTEM</title>
+    <script type="text/javascript">
+        (function () {
+            var host = window.location.hostname || '';
+
+            // App Restart Failsafe: Auto-forget brand selection if not logged in upon full app restart
+            var savedUser = localStorage.getItem('casUserInfo');
+            var brandJustSelected = sessionStorage.getItem('brandJustSelected');
+
+            // Clear the flag so consecutive app restarts without login will show the brand selection again
+            sessionStorage.removeItem('brandJustSelected');
+
+            if ((!savedUser || savedUser === 'null' || savedUser === 'undefined') && !brandJustSelected) {
+                localStorage.removeItem('selectedBrand');
+            }
+
+            var selected = localStorage.getItem('selectedBrand');
+            if (selected === 'null' || selected === 'undefined' || selected === '') selected = null;
+
+            var brand = 'hyundai';
+
+            // Special case: if on a specific subdomain, force that brand
+            if (host.indexOf('kia.') === 0) brand = 'kia';
+            else if (host.indexOf('genesis.') === 0) brand = 'genesis';
+            else if (host.indexOf('hyundai.') === 0) brand = 'hyundai';
+            else if (selected) brand = selected;
+
+            window.BRAND = brand;
+            window.loc = {};
+            window.Actor = { userInfo: {} };
+
+            window.selectBrand = function (b) {
+                localStorage.setItem('selectedBrand', b);
+                sessionStorage.setItem('brandJustSelected', 'true'); // Flag session
+                var isMobile = window.cordova || window.location.protocol === 'file:' || /Android|iPhone|iPad/i.test(navigator.userAgent);
+
+                if (isMobile) {
+                    window.location.reload();
+                } else {
+                    if (b === 'kia') {
+                        window.location.href = 'https://kia.hmgcolor.com/actor/m/index.html';
+                    } else if (b === 'genesis') {
+                        window.location.href = 'https://genesis.hmgcolor.com/actor/m/index.html';
+                    } else {
+                        window.location.reload();
+                    }
+                }
+            };
+        })();
+    </script>
+    <style>
+        #brand-selection {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 9999;
+            background-color: white;
+        }
+
+        @media screen and (orientation: landscape) {
+            #brand-selection {
+                flex-direction: row;
+            }
+        }
+
+        .brand-box {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+        }
+    </style>
+    <script type="text/javascript" src="js/plupload/plupload.full.min.js"></script>
+    <link href='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/main.min.css' rel='stylesheet' />
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.14/index.global.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/rrule@2.6.4/dist/es5/rrule.min.js'></script>
+    <script src='https://cdn.jsdelivr.net/npm/@fullcalendar/rrule@6.1.14/index.global.min.js'></script>
+    <!-- The line below must be kept intact for Sencha Cmd to build your application -->
+    <script id="microloader" data-app="315d6154-253b-4a3e-9a19-2a302eb043c0" type="text/javascript"
+        src="bootstrap.js"></script>
+
+</head>
+
+<body>
+    <div id="brand-selection" style="display: none;">
+        <div onclick="selectBrand('genesis')"
+            style="flex:1;background-color: black; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+            <img src="resources/image/genesis.jpg" style="max-width:80%; height:auto;" alt="GENESIS">
+        </div>
+        <div onclick="selectBrand('hyundai')"
+            style="flex:1;background-color: #062f5e; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+            <img src="resources/image/hyundai.jpg" style="max-width:80%; height:auto;" alt="HYUNDAI">
+        </div>
+        <div onclick="selectBrand('kia')"
+            style="flex:1;background-color: #292929; display: flex; justify-content: center; align-items: center; cursor: pointer;">
+            <img src="resources/image/kia.jpg" style="max-width:80%; height:auto;" alt="KIA">
+        </div>
+    </div>
+    <script type="text/javascript">
+        (function () {
+            var host = window.location.hostname || '';
+            var selected = localStorage.getItem('selectedBrand');
+
+            // Failsafe strictly handling string 'null' or 'undefined'
+            if (selected === 'null' || selected === 'undefined' || selected === '') {
+                selected = null;
+            }
+
+            // Subdomain check
+            var isSubdomain = host.indexOf('kia.') === 0 || host.indexOf('genesis.') === 0 || host.indexOf('hyundai.') === 0;
+
+            // Show portal if no brand is selected and we're not explicitly on a brand-specific subdomain
+            if (!selected && !isSubdomain) {
+                var el = document.getElementById('brand-selection');
+                if (el) {
+                    el.style.display = 'flex';
+                }
+            }
+        })();
+    </script>
+</body>
+
+</html>

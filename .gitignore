@@ -1,0 +1,40 @@
+# Sencha Cmd
+ext/
+build/
+archive/
+resources/scss/config.rb
+bootstrap.js
+bootstrap.json
+bootstrap.css
+app.js.old
+*.log
+
+# Cordova
+cordova/platforms/
+cordova/plugins/
+cordova/www/
+cordova/node_modules/
+
+# OS/IDEs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Project specific
+app.js.bak
+ProjectGrid_Raw.txt
+MainController_Raw.txt
+extract_grid.ps1
+extract_controller.ps1
+ProjectGrid_Recovered.txt
+MainController_Recovered.txt
+ MainController_Restored.js
+ ProjectGrid_Restored.js
+ ProjectGrid_Backup.js
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
