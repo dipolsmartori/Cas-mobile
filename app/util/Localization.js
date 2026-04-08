@@ -21,12 +21,19 @@ Ext.define('CasMobile.util.Localization', {
     load: function (callback) {
         // Simple language detection or default to 'en'
         // If the location isn't Korea, it must be select English by default
-        let systemLang = (navigator.language || navigator.userLanguage).toLowerCase();
-        let defaultLang = systemLang.includes('ko') ? 'ko' : 'en';
-        let lang = localStorage.getItem('language') || defaultLang;
+        const systemLang = (navigator.language || navigator.userLanguage).toLowerCase();
+        let defaultLang = 'en';
+        if (systemLang.includes('ko')) {
+            defaultLang = 'ko';
+        } else if (systemLang.includes('zh') || systemLang.includes('cn')) {
+            defaultLang = 'zh';
+        }
+        
+        const lang = localStorage.getItem('language') || defaultLang;
+        console.log('Localization: detected system_lang=' + systemLang + ', default=' + defaultLang + ', final=' + lang);
 
         Ext.Ajax.request({
-            url: `resources/locales/${lang}.json`,
+            url: 'resources/locales/' + lang + '.json',
             success: function (response) {
                 try {
                     window.loc = Ext.decode(response.responseText);

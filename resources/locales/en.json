@@ -312,6 +312,7 @@
   "deleteFromAttached": "Are you sure you want to delete? Any attached related PDF files will also be deleted.",
   "differentPartFound": "Different parts cannot be registered together.",
   "downloadApk": "Download App",
+  "downloadWebRedirectMsg": "APK downloads require a browser login. Would you like to go to the web version?",
   "duplicatedRound": "Data with the same round and type already exists.",
   "duplicatedRoundInBunch": "A file with the same round and type was found, so only the first one was added.",
   "editCompanyName": "Edit Company Name",

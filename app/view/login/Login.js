@@ -48,10 +48,12 @@ Ext.define('CasMobile.view.login.Login', {
         // ✅ 네트웤상태 체크
         const statusDot = this.down('#networkStatusDot');
 
-        // Set Language Value
+        // Set Language Value (Handled in config + sync'd here)
         const langField = this.down('#languageSelect');
         if (langField) {
-            langField.setValue(window.loc && window.loc.language ? window.loc.language : 'en');
+            const currentLang = (window.loc && window.loc.language) ? window.loc.language : 'en';
+            console.log('Login initialize: setting langField value to ' + currentLang);
+            langField.setValue(currentLang);
         }
 
         Ext.defer(function () {
@@ -73,10 +75,20 @@ Ext.define('CasMobile.view.login.Login', {
                     { text: '한국어', value: 'ko' },
                     { text: '中文', value: 'zh' }
                 ],
+                value: (window.loc && window.loc.language) ? window.loc.language : 'en',
                 listeners: {
-                    change: function (field, newValue) {
+                    painted: function(field) {
+                        field.isInitializationDone = true;
+                    },
+                    change: function (field, newValue, oldValue) {
+                        console.log('Language select change: ' + oldValue + ' -> ' + newValue + ' (Ready: ' + !!field.isInitializationDone + ')');
+                        
+                        // ignore if initialization is not done
+                        if (!field.isInitializationDone) return;
+
                         const currentLang = window.loc ? window.loc.language : 'en';
                         if (newValue && newValue !== currentLang) {
+                            console.log('Saving language: ' + newValue);
                             CasMobile.util.Localization.save(newValue);
                         }
                     }

@@ -1,8 +1,3 @@
-/**
- * This class is the main view for the application. It is specified in app.js as the
- * "mainView" property. That setting causes an instance of this class to be created and
- * added to the Viewport container.
- */
 Ext.define('CasMobile.view.main.Main', {
     extend: 'Ext.tab.Panel',
     xtype: 'app-main',
@@ -14,6 +9,7 @@ Ext.define('CasMobile.view.main.Main', {
         'CasMobile.view.ProjectMenu',
         'Ext.MessageBox',
         'Ext.layout.Box',
+        'Ext.layout.Center',
         'CasMobile.util.Util',
         'CasMobile.util.Localization',
         'CasMobile.view.schedule.Schedule'
@@ -30,7 +26,8 @@ Ext.define('CasMobile.view.main.Main', {
     tabBarPosition: 'bottom',
 
     listeners: {
-        painted: 'onMainViewPainted'
+        painted: 'onMainViewPainted',
+        beforeactiveitemchange: 'onBeforeActiveItemChange'
     },
 
     items: [
@@ -121,7 +118,7 @@ Ext.define('CasMobile.view.main.Main', {
                                                 if (isMobile) {
                                                     window.location.reload();
                                                 } else {
-                                                    window.location.href = 'https://hmgcolor.com/actor/m/index.html';
+                                                    window.location.href = window.location.pathname;
                                                 }
                                             }
                                         }
@@ -217,6 +214,7 @@ Ext.define('CasMobile.view.main.Main', {
                             itemId: 'btnDownloadApk',
                             text: 'Download App', // Fallback
                             iconCls: 'x-fab fa-android',
+                            hidden: false, // Visible again
                             handler: 'onDownloadApk'
                         },
                         { // 로그아웃
@@ -242,6 +240,19 @@ Ext.define('CasMobile.view.main.Main', {
                 align: 'stretch'
             },
             html: '<div style="padding: 20px;">Welcome to CAS Mobile</div>'
+        }, {
+            xtype: 'panel',
+            title: 'Visual Evaluation',
+            itemId: 'visualEvalTab',
+            iconCls: 'x-fa fa-clipboard-check',
+            layout: 'center',
+            items: [{
+                xtype: 'button',
+                text: 'Start Visual Evaluation',
+                ui: 'action',
+                padding: '10 20',
+                handler: 'onVisualEvaluation'
+            }]
         }, {
             title: 'Statistics',
             iconCls: 'x-fa fa-chart-bar',
@@ -282,7 +293,8 @@ Ext.define('CasMobile.view.main.Main', {
                     if (isMobile) {
                         window.location.reload();
                     } else {
-                        window.location.href = 'https://hmgcolor.com/actor/m/index.html';
+                        // Stay on current subdomain to keep LocalStorage consistent
+                        window.location.href = window.location.pathname;
                     }
                 };
                 logoutFrame.dom.src = CasMobile.APIs.getFullUrl(CasMobile.APIs.LOGOUT);
@@ -354,14 +366,19 @@ Ext.define('CasMobile.view.main.Main', {
                     btnLogout.setHandler(doLogout);
                 }
 
-                var btnQrCodeForUser = menu.down('#qrCodeForUser');
-                if (btnQrCodeForUser) {
-                    btnQrCodeForUser.setText(L.get('qrCodeForUser'));
+                var visualEvalTab = this.down('#visualEvalTab');
+                if (visualEvalTab) {
+                    visualEvalTab.setTitle(L.get('visualEvaluation'));
                 }
 
                 var evalHeader = menu.down('#evaluationHeader');
                 if (evalHeader) {
                     evalHeader.setHtml('<div style="background-color: #f0f0f0; border-top: 1px solid #cecece; border-bottom: 1px solid #ddd; padding: 5px; text-align: center; font-weight: bold; font-size: 11px; color: #555; margin-top: 5px;">' + L.get('evaluationHeader').toUpperCase() + '</div>');
+                }
+
+                var btnQrCodeForUser = menu.down('#qrCodeForUser');
+                if (btnQrCodeForUser) {
+                    btnQrCodeForUser.setText(L.get('qrCodeForUser'));
                 }
 
                 var offHeader = menu.down('#offlineHeader');
@@ -375,8 +392,8 @@ Ext.define('CasMobile.view.main.Main', {
                     btnDownloadApk.setText(L.get('downloadApk') || 'Download App');
                 }
 
-                }
             }
+        }
 
         //  사용자 활동을 체크하여  siteInfo.logoutTime동안 활동이 없으면 자동 로그아웃
         if (window.siteInfo && window.siteInfo.logoutTime) {

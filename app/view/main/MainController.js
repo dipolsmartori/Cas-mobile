@@ -41,6 +41,13 @@ Ext.define('CasMobile.view.main.MainController', {
         }, false);
     },
 
+    onBeforeActiveItemChange: function (container, toValue, fromValue) {
+        if (toValue && toValue.getItemId() === 'visualEvalTab') {
+            this.onVisualEvaluation();
+            return false;
+        }
+    },
+
     showStartPopups: function () {
         var me = this;
         var categories = [
@@ -165,11 +172,11 @@ Ext.define('CasMobile.view.main.MainController', {
                     }
                 }
             }, {
-                text: loc.get('main.close') || 'Close',
-                handler: function () {
-                    dialog.close();
-                }
-            }],
+                    text: loc.get('main.close') || 'Close',
+                    handler: function () {
+                        dialog.close();
+                    }
+                }],
             listeners: {
                 close: function () {
                     if (dialog.hideFor24Hours) {
@@ -196,7 +203,7 @@ Ext.define('CasMobile.view.main.MainController', {
 
         if (me.isOffline) {
             console.warn('Offline mode – loading cached project data');
-            me.loadProjectFromCache(params).then(function() {
+            me.loadProjectFromCache(params).then(function () {
                 if (callback) callback();
             });
             return;
@@ -207,7 +214,7 @@ Ext.define('CasMobile.view.main.MainController', {
 
         me.getMaxRound(params.datasetId).then(function (maxRound) {
             me._createRoundButtons(homeTab, maxRound);
-            
+
             if (homeTab.down('projectgrid')) {
                 homeTab.down('projectgrid').destroy();
             }
@@ -489,7 +496,7 @@ Ext.define('CasMobile.view.main.MainController', {
                     if (data && data.binderList) resolve(data.binderList);
                     else reject('Invalid project data');
                 },
-                failure: function(err) { reject(err); }
+                failure: function (err) { reject(err); }
             });
         });
 
@@ -526,7 +533,7 @@ Ext.define('CasMobile.view.main.MainController', {
                 var db = e.target.result;
                 var tx = db.transaction(['evaluations'], 'readwrite');
                 var store = tx.objectStore('evaluations');
-                
+
                 // Clear existing for this tab
                 var cursorReq = store.openCursor();
                 cursorReq.onsuccess = function (evt) {
@@ -536,7 +543,7 @@ Ext.define('CasMobile.view.main.MainController', {
                         cursor.continue();
                     }
                 };
-                
+
                 binderList.forEach(function (row) {
                     row._tabId = datasetId;
                     row._compositeId = datasetId + '_' + row.bd_idx;
@@ -558,8 +565,8 @@ Ext.define('CasMobile.view.main.MainController', {
                 };
                 store.put(cacheObj, datasetId);
                 if (carModels.length > 0) store.put(carModels, 'car_models');
-                
-                Ext.Msg.alert(CasMobile.util.Localization.get('main.success') || 'Success', 
+
+                Ext.Msg.alert(CasMobile.util.Localization.get('main.success') || 'Success',
                     (CasMobile.util.Localization.get('upload.offlineDataSaved') || 'Offline data saved for ') + cacheObj.projectName);
             };
         }).catch(function (err) {
@@ -586,9 +593,9 @@ Ext.define('CasMobile.view.main.MainController', {
             var getKeys = store.getAllKeys();
 
             Promise.all([
-                new Promise(function(r){ getAll.onsuccess = function(ev){ r(ev.target.result); }; }),
-                new Promise(function(r){ getKeys.onsuccess = function(ev){ r(ev.target.result); }; })
-            ]).then(function(results) {
+                new Promise(function (r) { getAll.onsuccess = function (ev) { r(ev.target.result); }; }),
+                new Promise(function (r) { getKeys.onsuccess = function (ev) { r(ev.target.result); }; })
+            ]).then(function (results) {
                 var dataList = results[0];
                 var keyList = results[1];
                 var syncList = [];
@@ -600,13 +607,13 @@ Ext.define('CasMobile.view.main.MainController', {
                     var records = Array.isArray(item) ? item : item.dataByBdIdx;
                     var pendingCount = 0;
                     if (records) {
-                        pendingCount = records.filter(function(r){ return r.isUpdatedOffline; }).length;
+                        pendingCount = records.filter(function (r) { return r.isUpdatedOffline; }).length;
                     }
                     if (pendingCount > 0) {
                         var dateStr = '';
                         if (item.timestamp) {
                             var d = new Date(item.timestamp);
-                            dateStr = d.getFullYear().toString().slice(-2) + '/' + ('0'+(d.getMonth()+1)).slice(-2) + '/' + ('0'+d.getDate()).slice(-2);
+                            dateStr = d.getFullYear().toString().slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + ('0' + d.getDate()).slice(-2);
                         }
                         syncList.push({
                             key: key,
@@ -629,11 +636,11 @@ Ext.define('CasMobile.view.main.MainController', {
         };
     },
 
-    showSyncDialog: function(syncList) {
+    showSyncDialog: function (syncList) {
         var me = this;
         var loc = CasMobile.util.Localization;
         var store = Ext.create('Ext.data.Store', { data: syncList });
-        
+
         var dialog = Ext.create('Ext.Dialog', {
             title: loc.get('main.selectProject') || 'Select Project',
             layout: 'fit',
@@ -646,27 +653,27 @@ Ext.define('CasMobile.view.main.MainController', {
                 columns: [
                     { text: 'Project', dataIndex: 'projectName', flex: 1 },
                     { text: 'Date', dataIndex: 'savedDate', width: 100, align: 'center' },
-                    { 
-                        text: 'Pending', 
-                        dataIndex: 'syncCount', 
-                        width: 100, 
+                    {
+                        text: 'Pending',
+                        dataIndex: 'syncCount',
+                        width: 100,
                         align: 'center',
-                        renderer: function(v) { return '<span style="color:red;font-weight:bold;">'+v+'</span>'; }
+                        renderer: function (v) { return '<span style="color:red;font-weight:bold;">' + v + '</span>'; }
                     }
                 ],
                 listeners: {
-                    itemtap: function(g, index, target, record) {
+                    itemtap: function (g, index, target, record) {
                         dialog.destroy();
                         me.startSync(record.getData());
                     }
                 }
             }],
-            buttons: [{ text: loc.get('main.cancel'), handler: function(){ dialog.destroy(); } }]
+            buttons: [{ text: loc.get('main.cancel'), handler: function () { dialog.destroy(); } }]
         });
         dialog.show();
     },
 
-    startSync: function(projectData) {
+    startSync: function (projectData) {
         var me = this;
         var loc = CasMobile.util.Localization;
         var view = me.getView();
@@ -674,18 +681,18 @@ Ext.define('CasMobile.view.main.MainController', {
 
         var successCount = 0;
         var failCount = 0;
-        var records = projectData.records.filter(function(r){ return r.isUpdatedOffline; });
+        var records = projectData.records.filter(function (r) { return r.isUpdatedOffline; });
         var total = records.length;
-        
+
         if (total === 0) {
             view.setMasked(false);
             return;
         }
 
-        var processSync = function(index) {
+        var processSync = function (index) {
             if (index >= total) {
                 view.setMasked(false);
-                var callback = function() {
+                var callback = function () {
                     var grid = view.down('projectgrid');
                     if (grid && grid.params) me.onProjectSelected(grid.params);
                 };
@@ -700,9 +707,9 @@ Ext.define('CasMobile.view.main.MainController', {
             var rec = records[index];
             var bd_idx = rec.bd_idx;
             var bd_data = rec.bd_data || [];
-            var roundData = bd_data.filter(function(c){ return c.cols_code && c.cols_code.startsWith('round') && c.isUpdatedOffline; });
-            
-            var roundSync = function(rIdx) {
+            var roundData = bd_data.filter(function (c) { return c.cols_code && c.cols_code.startsWith('round') && c.isUpdatedOffline; });
+
+            var roundSync = function (rIdx) {
                 if (rIdx >= roundData.length) {
                     processSync(index + 1);
                     return;
@@ -719,12 +726,12 @@ Ext.define('CasMobile.view.main.MainController', {
                     url: CasMobile.APIs.UPDATE_DATA,
                     params: params,
                     withCredentials: true,
-                    success: function(res) {
+                    success: function (res) {
                         if (res.responseText.indexOf('true') !== -1) successCount++;
                         else failCount++;
                         roundSync(rIdx + 1);
                     },
-                    failure: function() {
+                    failure: function () {
                         failCount++;
                         roundSync(rIdx + 1);
                     }
@@ -780,7 +787,7 @@ Ext.define('CasMobile.view.main.MainController', {
                     resolve({ maxRound: maxRound, data: mapped });
                 };
             };
-            dbReq.onerror = function() { resolve(null); };
+            dbReq.onerror = function () { resolve(null); };
         });
     },
 
@@ -824,7 +831,7 @@ Ext.define('CasMobile.view.main.MainController', {
                     resolve({ maxRound: maxRound, data: mapped });
                 };
             };
-            cacheReq.onerror = function() { resolve(null); };
+            cacheReq.onerror = function () { resolve(null); };
         });
     },
 
@@ -850,7 +857,9 @@ Ext.define('CasMobile.view.main.MainController', {
         });
         dialog.show();
     },
-
+    /**
+     * 다은로드 app
+     */
     onDownloadApk: function () {
         var loc = CasMobile.util.Localization;
         var dialog = Ext.create('Ext.Dialog', {
@@ -871,14 +880,42 @@ Ext.define('CasMobile.view.main.MainController', {
                 ui: 'action',
                 flex: 1,
                 margin: '0 0 0 5',
+                hidden: false,
                 handler: function () {
-                    var url = 'https://hmgcolor.com/binder/down/5423/0';
-                    if (window.cordova && window.cordova.InAppBrowser) {
-                        window.cordova.InAppBrowser.open(url, '_system');
+                    var brand = window.BRAND || '';
+                    if (brand === 'hyundai') brand = '';
+
+                    var host = brand ? brand + '.hmgcolor.com' : 'hmgcolor.com';
+                    var url = 'https://' + host + '/binder/down/5423/0';
+
+                    console.log('Final APK Download URL: ' + url);
+
+                    var isMobile = !!(window.cordova || Ext.os.is.Android || Ext.os.is.Phone || window.location.protocol === 'file:');
+
+                    if (isMobile) {
+                        dialog.close();
+                        var webUrl = 'https://' + host + '/actor/m/index.html';
+                        Ext.Msg.confirm(
+                            loc.get('main.warning') || 'Notice',
+                            (loc.get('downloadWebRedirectMsg') || 'APK downloads require a browser login. Go to the web version?'),
+                            function (choice) {
+                                if (choice === 'yes') {
+                                    if (window.cordova && window.cordova.InAppBrowser) {
+                                        window.cordova.InAppBrowser.open(webUrl, '_system');
+                                    } else {
+                                        window.open(webUrl, '_blank');
+                                    }
+                                }
+                            }
+                        );
                     } else {
-                        window.location.href = url;
+                        if (window.cordova && window.cordova.InAppBrowser) {
+                            window.cordova.InAppBrowser.open(url, '_system');
+                        } else {
+                            window.location.href = url;
+                        }
+                        dialog.close();
                     }
-                    dialog.close();
                 }
             }]
         });

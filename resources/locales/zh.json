@@ -308,6 +308,7 @@
   "deleteFromAttached": "确定要删除吗？任何相关的 PDF 附件也将被删除。",
   "differentPartFound": "不能一起注册不同的零件。",
   "downloadApk": "下载应用",
+  "downloadWebRedirectMsg": "下载 APK 需要浏览器登录。 您想访问网页版吗？",
   "duplicatedRound": "具有相同轮次和类型的数据已存在。",
   "duplicatedRoundInBunch": "发现具有相同轮次和类型的文件，因此仅添加了第一个。",
   "editCompanyName": "编辑公司名称",
