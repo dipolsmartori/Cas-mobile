@@ -68,7 +68,7 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationContainerController', {
             this.fileInput = document.createElement('input');
             this.fileInput.type = 'file';
             this.fileInput.style.display = 'none';
-            this.fileInput.multiple = true;
+            this.fileInput.multiple = false;
             this.fileInput.accept = 'image/*';
             this.fileInput.addEventListener('change', this.handleFileUpload.bind(this));
             document.body.appendChild(this.fileInput);
@@ -92,13 +92,24 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationContainerController', {
 
         try {
             const upResult = await CasMobile.util.ActorUtil.addUpdate1(formData, container);
+            upResult = JSON.parse(upResult);
             const thumbContainer = container.down('#thumbContainer');
             const hiddenField = container.down('#evaluationImage');
 
             const imageUrl = `${location.origin}/thumb/${upResult.bd_idx[0]}/0`;
-            console.log('imageUrl', imageUrl)
             let currentVal = hiddenField.getValue();
             hiddenField.setValue(currentVal ? currentVal + ',' + imageUrl : imageUrl);
+            const form = container.down('formpanel');
+            const record = form.getRecord();
+            const roundJson = record.get('roundJson') || [{}];
+            if (roundJson.img) {
+                roundJson.img += `,${upResult.bd_idx[0]}/0`;
+            }
+            else {
+                roundJson.img = `${upResult.bd_idx[0]}/0`;
+            }
+            record.set('roundJson', roundJson);
+
 
             this.addImageThumbnail(thumbContainer, imageUrl);
         } catch (err) {
