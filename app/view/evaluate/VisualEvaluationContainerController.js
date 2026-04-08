@@ -64,6 +64,41 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationContainerController', {
     },
 
     onUploadBtnTap: function (btn) {
+        const me = this;
+        if (!me.uploadMenu) {
+            me.uploadMenu = Ext.create('Ext.ActionSheet', {
+                items: [
+                    {
+                        text: L.get('takePhoto') || 'Take Photo',
+                        iconCls: 'x-fa fa-camera',
+                        handler: function () {
+                            me.uploadMenu.hide();
+                            me.triggerFileUpload(true);
+                        }
+                    },
+                    {
+                        text: L.get('chooseFromGallery') || 'Choose from Gallery',
+                        iconCls: 'x-fa fa-images',
+                        handler: function () {
+                            me.uploadMenu.hide();
+                            me.triggerFileUpload(false);
+                        }
+                    },
+                    {
+                        text: L.get('cancel') || 'Cancel',
+                        ui: 'decline',
+                        handler: function () {
+                            me.uploadMenu.hide();
+                        }
+                    }
+                ]
+            });
+            Ext.Viewport.add(me.uploadMenu);
+        }
+        me.uploadMenu.show();
+    },
+
+    triggerFileUpload: function (isCamera) {
         if (!this.fileInput) {
             this.fileInput = document.createElement('input');
             this.fileInput.type = 'file';
@@ -73,6 +108,13 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationContainerController', {
             this.fileInput.addEventListener('change', this.handleFileUpload.bind(this));
             document.body.appendChild(this.fileInput);
         }
+
+        if (isCamera) {
+            this.fileInput.setAttribute('capture', 'camera');
+        } else {
+            this.fileInput.removeAttribute('capture');
+        }
+
         this.fileInput.click();
     },
     /**
@@ -91,7 +133,7 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationContainerController', {
         formData.append('group', 0);
 
         try {
-            const upResult = await CasMobile.util.ActorUtil.addUpdate1(formData, container);
+            let upResult = await CasMobile.util.ActorUtil.addUpdate1(formData, container);
             upResult = JSON.parse(upResult);
             const thumbContainer = container.down('#thumbContainer');
             const hiddenField = container.down('#evaluationImage');
@@ -101,17 +143,31 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationContainerController', {
             hiddenField.setValue(currentVal ? currentVal + ',' + imageUrl : imageUrl);
             const form = container.down('formpanel');
             const record = form.getRecord();
-            const roundJson = record.get('roundJson') || [{}];
-            if (roundJson.img) {
-                roundJson.img += `,${upResult.bd_idx[0]}/0`;
+            let roundJson = record.get('roundJson') || [{}];
+            if (!Array.isArray(roundJson)) {
+                roundJson = [roundJson];
+            }
+            if (roundJson[0].img) {
+                roundJson[0].img += `,${upResult.bd_idx[0]}/0`;
             }
             else {
-                roundJson.img = `${upResult.bd_idx[0]}/0`;
+                roundJson[0].img = `${upResult.bd_idx[0]}/0`;
             }
-            record.set('roundJson', roundJson);
-
+            record.set('roundJson', JSON.stringify(roundJson));
 
             this.addImageThumbnail(thumbContainer, imageUrl);
+            const roundCode = `round${roundJson[0].round}`;
+            // 🆙🆙🆙 roound 필드에 이미지 링크 저장
+            await new Promise((resolve, reject) => {
+                Ext.Ajax.request({
+                    url: CasMobile.APIs.getFullUrl(CasMobile.APIs.UPDATE_DATA),
+                    method: 'POST',
+                    params: {
+                        bd_idx: record.get('bd_idx'),
+                        [roundCode]: JSON.stringify(roundJson)
+                    }
+                });
+            });
         } catch (err) {
             console.error('Upload failed', err);
         }
