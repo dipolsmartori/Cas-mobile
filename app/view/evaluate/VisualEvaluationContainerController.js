@@ -65,6 +65,7 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationContainerController', {
 
     onUploadBtnTap: function (btn) {
         const me = this;
+        const L = CasMobile.util.Localization;
         if (!me.uploadMenu) {
             me.uploadMenu = Ext.create('Ext.ActionSheet', {
                 items: [
