@@ -151,10 +151,10 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationWindowController', {
         const maxRound = this.getView().getMaxRound();
         const L = CasMobile.util.Localization;
 
-        // Background Scanning Options (For Physical Scanners)
+        // 백그라운드 스캔 옵션 (물리 스캐너용)
         for (let i = 1; i <= maxRound; i++) {
             menuItems.push({
-                text: `Background Scan: Round ${i}`,
+                text: `Round ${i}`,
                 round: i,
                 iconCls: 'x-fa fa-bolt',
                 handler: (menuItem) => {
@@ -166,7 +166,7 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationWindowController', {
             btn.setMenu(menuItems);
         }
 
-        // Add pulse animation style if missing
+        // 펄스 애니메이션 스타일 추가 (없는 경우)
         if (!document.getElementById('pulse-green-style')) {
             const style = document.createElement('style');
             style.id = 'pulse-green-style';
@@ -187,7 +187,7 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationWindowController', {
         const statusContainer = view.down('#scanStatusContainer');
         const statusLabel = view.down('#scanStatusLabel');
 
-        me.disableBackgroundScan(); // Clear existing
+        me.disableBackgroundScan(); // 기존 리스너 제거
 
         me._scannerBuffer = '';
         me._lastKeyTime = 0;

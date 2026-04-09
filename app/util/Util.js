@@ -72,9 +72,9 @@ Ext.define('CasMobile.util.Util', {
     },
 
     /**
-     * Centralized QR Data Parser to ensure consistency across windows
-     * @param {string} text Raw scan result
-     * @returns {Object} Normalized data object
+     * 창 간의 일관성을 보장하기 위한 중앙 집중식 QR 데이터 파서
+     * @param {string} text 원본 스캔 결과
+     * @returns {Object} 정규화된 데이터 객체
      */
     parseQrData: function (text) {
         let data = {};
