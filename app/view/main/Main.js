@@ -62,6 +62,7 @@ Ext.define('CasMobile.view.main.Main', {
                                 .then(function (response) { return response.json(); })
                                 .then(function (res) {
                                     currentVersion = res.binderListBeanList[0].bd_subject;
+                                    // 현재 버전과 서버 버전이 다르면 다운로드 버튼에 빨간색 NEW 표시
                                     if (appVersion !== currentVersion) {
                                         var mainView = cmp.up('app-main');
                                         if (mainView) {
@@ -290,11 +291,20 @@ Ext.define('CasMobile.view.main.Main', {
                     localStorage.removeItem('selectedBrand');
                     localStorage.removeItem('casUserInfo');
                     var isMobile = window.cordova || window.location.protocol === 'file:';
+                    console.log('isMobile', isMobile, window.location.pathname);
                     if (isMobile) {
                         window.location.reload();
                     } else {
-                        // Stay on current subdomain to keep LocalStorage consistent
-                        window.location.href = window.location.pathname;
+                        // Strip subdomain if present (e.g., ko.smartori.com -> smartori.com)
+                        var host = window.location.hostname;
+                        var hostParts = host.split('.');
+                        if (hostParts.length > 2 && !/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
+                            hostParts.shift();
+                            var baseHost = hostParts.join('.');
+                            window.location.href = window.location.protocol + '//' + baseHost + window.location.pathname;
+                        } else {
+                            window.location.href = window.location.pathname;
+                        }
                     }
                 };
                 logoutFrame.dom.src = CasMobile.APIs.getFullUrl(CasMobile.APIs.LOGOUT);
