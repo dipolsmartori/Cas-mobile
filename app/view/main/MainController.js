@@ -42,8 +42,14 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     onBeforeActiveItemChange: function (container, toValue, fromValue) {
+        // 비주얼 평가 탭 클릭 시 팝업을 띄우고 홈 탭으로 이동하도록 처리 (기능적 숏컷)
         if (toValue && toValue.getItemId() === 'visualEvalTab') {
             this.onVisualEvaluation();
+
+            var homeTab = container.down('#homeTab');
+            if (homeTab && fromValue !== homeTab) {
+                container.setActiveItem(homeTab);
+            }
             return false;
         }
     },

@@ -83,10 +83,15 @@ Ext.define('CasMobile.Application', {
             success: function (response) {
                 try {
                     window.siteInfo = JSON.parse(response.responseText);
-                    window.siteInfo.categories = window.siteInfo[BRAND].categories;
-                    delete window.siteInfo.hyundai;
-                    delete window.siteInfo.kia;
-                    delete window.siteInfo.genesis;
+                    console.log(window.BRAND);
+                    if (window.BRAND && window.siteInfo[window.BRAND]) {
+                        window.siteInfo.categories = window.siteInfo[window.BRAND].categories;
+                        delete window.siteInfo.hyundai;
+                        delete window.siteInfo.kia;
+                        delete window.siteInfo.genesis;
+                    } else {
+                        console.log('Brand categories not loaded yet (Portal mode).');
+                    }
                 } catch (e) {
                     console.error('Failed to parse actor.json', e);
                     Ext.Msg.alert('Error', 'Invalid configuration file.');
@@ -231,13 +236,15 @@ Ext.define('CasMobile.Application', {
     },
 
     onAppUpdate: function () {
-        Ext.Msg.confirm('Application Update', 'This application has an update, reload?',
-            function (choice) {
-                if (choice === 'yes') {
-                    window.location.reload();
+        if (window.cordova) {
+            Ext.Msg.confirm('Application Update', 'This application has an update, reload?',
+                function (choice) {
+                    if (choice === 'yes') {
+                        window.location.reload();
+                    }
                 }
-            }
-        );
+            );
+        }
     },
 
     showLoginView: function () {

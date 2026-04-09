@@ -11,15 +11,21 @@
         (function () {
             var host = window.location.hostname || '';
 
-            // App Restart Failsafe: Auto-forget brand selection if not logged in upon full app restart
+            var isLogout = window.location.search.indexOf('logout=true') !== -1;
             var savedUser = localStorage.getItem('casUserInfo');
             var brandJustSelected = sessionStorage.getItem('brandJustSelected');
 
             // Clear the flag so consecutive app restarts without login will show the brand selection again
             sessionStorage.removeItem('brandJustSelected');
 
-            if ((!savedUser || savedUser === 'null' || savedUser === 'undefined') && !brandJustSelected) {
+            // App Restart Failsafe: Auto-forget brand selection if not logged in upon full app restart
+            if ((!savedUser || savedUser === 'null' || savedUser === 'undefined') && !brandJustSelected || isLogout) {
                 localStorage.removeItem('selectedBrand');
+                if (isLogout && window.history.replaceState) {
+                    // Clean up URL after clearing
+                    var cleanUrl = window.location.pathname;
+                    window.history.replaceState({}, document.title, cleanUrl);
+                }
             }
 
             var selected = localStorage.getItem('selectedBrand');
@@ -54,6 +60,13 @@
                     }
                 }
             };
+
+            // Immediate Visibility Check: Decides if we show the portal before DOM load finishes
+            var isSubdomain = host.indexOf('kia.') === 0 || host.indexOf('genesis.') === 0 || host.indexOf('hyundai.') === 0;
+            if (!selected && !isSubdomain) {
+                // We'll inject a temporary style to ensure it's visible even before DOM finishes
+                document.write('<style>#brand-selection { display: flex !important; }</style>');
+            }
         })();
     </script>
     <style>
@@ -109,28 +122,6 @@
             <img src="resources/image/kia.jpg" style="max-width:80%; height:auto;" alt="KIA">
         </div>
     </div>
-    <script type="text/javascript">
-        (function () {
-            var host = window.location.hostname || '';
-            var selected = localStorage.getItem('selectedBrand');
-
-            // Failsafe strictly handling string 'null' or 'undefined'
-            if (selected === 'null' || selected === 'undefined' || selected === '') {
-                selected = null;
-            }
-
-            // Subdomain check
-            var isSubdomain = host.indexOf('kia.') === 0 || host.indexOf('genesis.') === 0 || host.indexOf('hyundai.') === 0;
-
-            // Show portal if no brand is selected and we're not explicitly on a brand-specific subdomain
-            if (!selected && !isSubdomain) {
-                var el = document.getElementById('brand-selection');
-                if (el) {
-                    el.style.display = 'flex';
-                }
-            }
-        })();
-    </script>
 </body>
 
 </html>

@@ -301,9 +301,9 @@ Ext.define('CasMobile.view.main.Main', {
                         if (hostParts.length > 2 && !/^\d+\.\d+\.\d+\.\d+$/.test(host)) {
                             hostParts.shift();
                             var baseHost = hostParts.join('.');
-                            window.location.href = window.location.protocol + '//' + baseHost + window.location.pathname;
+                            window.location.href = window.location.protocol + '//' + baseHost + window.location.pathname + '?logout=true';
                         } else {
-                            window.location.href = window.location.pathname;
+                            window.location.href = window.location.pathname + '?logout=true';
                         }
                     }
                 };
