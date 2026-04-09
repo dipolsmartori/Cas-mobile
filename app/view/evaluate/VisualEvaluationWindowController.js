@@ -142,27 +142,122 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationWindowController', {
         const evalBtn = Ext.ComponentQuery.query('#btnVisualEval')[0];
         if (evalBtn) evalBtn.setDisabled(false);
 
+        this.disableBackgroundScan();
         this.callParent(arguments);
     },
 
     onQrButtonPainted: function (btn) {
         const menuItems = [];
         const maxRound = this.getView().getMaxRound();
+        const L = CasMobile.util.Localization;
+
+        // Background Scanning Options (For Physical Scanners)
         for (let i = 1; i <= maxRound; i++) {
             menuItems.push({
-                text: `Round ${i}`,
+                text: `Background Scan: Round ${i}`,
                 round: i,
+                iconCls: 'x-fa fa-bolt',
                 handler: (menuItem) => {
-                    Ext.create('CasMobile.view.QrScannerWindow', {
-                        mode: 'add',
-                        round: menuItem.round,
-                        targetView: this.getView()
-                    }).show();
+                    this.enableBackgroundScan(menuItem.round);
                 }
             });
         }
         if (menuItems.length > 0) {
             btn.setMenu(menuItems);
+        }
+
+        // Add pulse animation style if missing
+        if (!document.getElementById('pulse-green-style')) {
+            const style = document.createElement('style');
+            style.id = 'pulse-green-style';
+            style.innerHTML = `
+                @keyframes pulse-green {
+                    0% { transform: scale(0.95); opacity: 0.7; }
+                    70% { transform: scale(1.1); opacity: 1; }
+                    100% { transform: scale(0.95); opacity: 0.7; }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    },
+
+    enableBackgroundScan: function (round) {
+        const me = this;
+        const view = me.getView();
+        const statusContainer = view.down('#scanStatusContainer');
+        const statusLabel = view.down('#scanStatusLabel');
+
+        me.disableBackgroundScan(); // Clear existing
+
+        me._scannerBuffer = '';
+        me._lastKeyTime = 0;
+        me._scanningRound = round;
+
+        me._backgroundScannerListener = (e) => {
+            if (e.key === 'Enter') {
+                if (me._scannerBuffer.length > 0) {
+                    if (e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA') {
+                        e.preventDefault();
+                        me.onBackgroundScanSuccess(me._scannerBuffer, me._scanningRound);
+                    }
+                    me._scannerBuffer = '';
+                }
+                return;
+            }
+            if (e.key.length > 1) return;
+            const now = Date.now();
+            if (now - me._lastKeyTime > 50) me._scannerBuffer = '';
+            me._scannerBuffer += e.key;
+            me._lastKeyTime = now;
+        };
+
+        document.addEventListener('keydown', me._backgroundScannerListener);
+
+        if (statusContainer) {
+            statusLabel.setHtml(`<span style="width: 10px; height: 10px; background: #2e7d32; border-radius: 50%; display: inline-block; margin-right: 8px; animation: pulse-green 1.5s infinite;"></span> Scanning Round ${round}...`);
+            statusContainer.show();
+        }
+
+        Ext.toast({
+            message: `Background Scanning Active (Round ${round})`,
+            timeout: 2000
+        });
+    },
+
+    disableBackgroundScan: function () {
+        const me = this;
+        if (me._backgroundScannerListener) {
+            document.removeEventListener('keydown', me._backgroundScannerListener);
+            me._backgroundScannerListener = null;
+        }
+        me._scanningRound = null;
+
+        const container = me.getView().down('#scanStatusContainer');
+        if (container) container.hide();
+    },
+
+    onBackgroundScanSuccess: function (text, round) {
+        const me = this;
+        const data = CasMobile.util.Util.parseQrData(text);
+        const homeTab = Ext.Viewport.down('app-main').down('#homeTab');
+        const grid = homeTab ? homeTab.down('projectgrid') : null;
+        const store = grid ? grid.getStore() : null;
+
+        if (!store) return;
+
+        let findRecord = store.findRecord('partId', data.partId, 0, false, true, true);
+        if (!findRecord) {
+            findRecord = store.findRecord('partNumber', data.partId, 0, false, true, true);
+        }
+
+        if (findRecord) {
+            me.addEvaluationList(findRecord, round);
+            Ext.toast({
+                message: `Added: ${findRecord.get('modelName')} / Round ${round}`,
+                timeout: 1500
+            });
+        } else {
+            Ext.Msg.alert('Scan Result', `Part ID not found: ${data.partId}`);
         }
     },
 

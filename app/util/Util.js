@@ -69,5 +69,39 @@ Ext.define('CasMobile.util.Util', {
             statusDot.setTooltip && statusDot.setTooltip(isOnline ? 'Online' : 'Offline');
         }
         return isOnline;
+    },
+
+    /**
+     * Centralized QR Data Parser to ensure consistency across windows
+     * @param {string} text Raw scan result
+     * @returns {Object} Normalized data object
+     */
+    parseQrData: function (text) {
+        let data = {};
+        try {
+            data = JSON.parse(text);
+            if (data.partId) data.partId = data.partId.toString().replace(/\//g, '-');
+            if (data.grainCode) data.grainCode = data.grainCode.toString().replace(/\//g, '-');
+        } catch (e) {
+            const parts = text.split(',');
+            if (parts.length >= 4) {
+                data = {
+                    partId: parts[0].replace(/\//g, '-').trim(),
+                    modelId: parts[1].trim(),
+                    colorCode: parts[2].trim(),
+                    grainCode: parts[3].replace(/\//g, '-').trim()
+                };
+            } else if (parts.length >= 2) {
+                data = {
+                    partId: parts[0].replace(/\//g, '-').trim(),
+                    grainCode: parts[parts.length - 1].replace(/\//g, '-').trim()
+                };
+            } else {
+                data = {
+                    partId: text.replace(/\//g, '-').trim()
+                };
+            }
+        }
+        return data;
     }
 });

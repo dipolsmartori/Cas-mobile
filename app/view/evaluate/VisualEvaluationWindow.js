@@ -59,6 +59,29 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationWindow', {
                     listeners: {
                         painted: 'onQrButtonPainted'
                     }
+                },
+                {
+                    xtype: 'container',
+                    itemId: 'scanStatusContainer',
+                    hidden: true,
+                    layout: 'hbox',
+                    margin: '0 0 0 10',
+                    items: [
+                        {
+                            xtype: 'component',
+                            itemId: 'scanStatusLabel',
+                            style: 'font-weight: bold; color: #2e7d32; display: flex; align-items: center; border-left: 2px solid #ddd; padding-left: 10px;',
+                            html: '<span style="width: 10px; height: 10px; background: #2e7d32; border-radius: 50%; display: inline-block; margin-right: 8px; animation: pulse-green 1.5s infinite;"></span> Scanning Round 1...'
+                        },
+                        {
+                            xtype: 'button',
+                            iconCls: 'x-fa fa-stop-circle',
+                            ui: 'decline',
+                            margin: '0 0 0 10',
+                            text: 'Stop',
+                            handler: 'disableBackgroundScan'
+                        }
+                    ]
                 }
             ]
         },
