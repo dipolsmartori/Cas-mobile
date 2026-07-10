@@ -291,6 +291,11 @@ Ext.define('CasMobile.view.schedule.ScheduleController', {
             return;
         }
 
+        if (this.calendarSwipeAnimating) {
+            console.info('[Schedule calendar swipe] ignored while transition is active');
+            return;
+        }
+
         const previousDate = this.calendar.getDate();
         const monthOffset = event.direction === 'left' ? 1 : -1;
         const targetDate = new Date(previousDate.getFullYear(), previousDate.getMonth() + monthOffset, 1);
@@ -305,24 +310,108 @@ Ext.define('CasMobile.view.schedule.ScheduleController', {
 
         Ext.defer(function () {
             if (!me.calendar) return;
+            me.animateCalendarMonthChange(targetDate, direction);
+        }, 0);
+    },
 
+    animateCalendarMonthChange: function (targetDate, direction) {
+        const me = this;
+        const calendarDom = me.calendarGestureElement && me.calendarGestureElement.dom;
+        const harness = calendarDom && calendarDom.querySelector('.fc-view-harness');
+        const currentView = harness && harness.querySelector('.fc-view-harness-active');
+
+        if (!me.calendar || !harness || !currentView || !currentView.animate) {
             me.calendar.gotoDate(targetDate);
             me.calendar.render();
             me.calendar.updateSize();
+            me.logCalendarSwipeRender(direction, false);
+            return;
+        }
 
-            Ext.defer(function () {
-                if (!me.calendar) return;
+        me.calendarSwipeAnimating = true;
 
-                const calendarDom = me.calendarGestureElement && me.calendarGestureElement.dom;
-                const titleElement = calendarDom && calendarDom.querySelector('.fc-toolbar-title');
+        const originalOverflow = harness.style.overflow;
+        const originalPosition = harness.style.position;
+        const outgoingView = currentView.cloneNode(true);
+        const distance = harness.getBoundingClientRect().width || currentView.getBoundingClientRect().width;
+        const outgoingX = direction === 'left' ? -distance : distance;
+        const incomingX = -outgoingX;
 
-                console.info('[Schedule calendar swipe] render completed', {
-                    direction: direction,
-                    currentMonth: Ext.Date.format(me.calendar.getDate(), 'Y-m'),
-                    toolbarTitle: titleElement ? titleElement.textContent.trim() : ''
-                });
-            }, 50);
-        }, 0);
+        harness.style.position = 'relative';
+        harness.style.overflow = 'hidden';
+
+        outgoingView.classList.remove('fc-view-harness-active');
+        outgoingView.classList.add('cas-calendar-slide-layer');
+        outgoingView.style.position = 'absolute';
+        outgoingView.style.inset = '0';
+        outgoingView.style.width = '100%';
+        outgoingView.style.height = '100%';
+        outgoingView.style.zIndex = '2';
+        outgoingView.style.pointerEvents = 'none';
+        outgoingView.style.backgroundColor = '#fff';
+        harness.appendChild(outgoingView);
+
+        me.calendar.gotoDate(targetDate);
+
+        const incomingView = harness.querySelector('.fc-view-harness-active');
+
+        if (!incomingView || !incomingView.animate) {
+            outgoingView.remove();
+            harness.style.overflow = originalOverflow;
+            harness.style.position = originalPosition;
+            me.calendarSwipeAnimating = false;
+            me.calendar.render();
+            me.calendar.updateSize();
+            me.logCalendarSwipeRender(direction, false);
+            return;
+        }
+
+        const animationOptions = {
+            duration: 240,
+            easing: 'cubic-bezier(0.22, 0.61, 0.36, 1)',
+            fill: 'both'
+        };
+        const outgoingAnimation = outgoingView.animate([
+            { transform: 'translate3d(0, 0, 0)' },
+            { transform: 'translate3d(' + outgoingX + 'px, 0, 0)' }
+        ], animationOptions);
+        const incomingAnimation = incomingView.animate([
+            { transform: 'translate3d(' + incomingX + 'px, 0, 0)' },
+            { transform: 'translate3d(0, 0, 0)' }
+        ], animationOptions);
+        let transitionCompleted = false;
+
+        const finishTransition = function () {
+            if (transitionCompleted) return;
+            transitionCompleted = true;
+
+            outgoingAnimation.cancel();
+            incomingAnimation.cancel();
+            outgoingView.remove();
+            harness.style.overflow = originalOverflow;
+            harness.style.position = originalPosition;
+            me.calendarSwipeAnimating = false;
+
+            if (me.calendar) {
+                me.calendar.updateSize();
+                me.logCalendarSwipeRender(direction, true);
+            }
+        };
+
+        incomingAnimation.onfinish = finishTransition;
+        Ext.defer(finishTransition, 400);
+    },
+
+    logCalendarSwipeRender: function (direction, animated) {
+        const calendarDom = this.calendarGestureElement && this.calendarGestureElement.dom;
+        const titleElement = calendarDom && calendarDom.querySelector('.fc-toolbar-title');
+
+        console.info('[Schedule calendar swipe] render completed', {
+            direction: direction,
+            animated: animated,
+            currentMonth: Ext.Date.format(this.calendar.getDate(), 'Y-m'),
+            toolbarTitle: titleElement ? titleElement.textContent.trim() : ''
+        });
     },
 
     destroy: function () {
