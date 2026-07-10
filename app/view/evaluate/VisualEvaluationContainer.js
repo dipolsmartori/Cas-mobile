@@ -120,7 +120,13 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationContainer', {
                         bind: {
                             value: '{remarksVisual}'
                         },
-                        maxRows: 5
+                        maxRows: 5,
+                        triggers: {
+                            edit: {
+                                iconCls: 'x-fa fa-edit',
+                                handler: 'onUpdateRemarkEntries'
+                            }
+                        }
                     },
                     {
                         xtype: 'hiddenfield',

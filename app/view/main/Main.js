@@ -12,7 +12,8 @@ Ext.define('CasMobile.view.main.Main', {
         'Ext.layout.Center',
         'CasMobile.util.Util',
         'CasMobile.util.Localization',
-        'CasMobile.view.schedule.Schedule'
+        'CasMobile.view.schedule.Schedule',
+        'Ext.Dialog'
     ],
 
     defaults: {
@@ -34,13 +35,14 @@ Ext.define('CasMobile.view.main.Main', {
         {
             xtype: 'toolbar',
             docked: 'top',
+            itemId: 'mainToolbar',
             title: 'CPR MOBILE',
             items: [
                 { // 프로젝트 선택 버튼 메뉴
                     iconCls: 'x-fa fa-bars',
                     handler: 'onShowProjectMenu'
                 },
-                { xtype: 'spacer', flex: 1 },      // pushes following items to the right
+                { xtype: 'spacer', flex: 1 },
                 {
                     xtype: 'component',
                     itemId: 'networkStatus',
@@ -62,10 +64,58 @@ Ext.define('CasMobile.view.main.Main', {
                                 .then(function (response) { return response.json(); })
                                 .then(function (res) {
                                     currentVersion = res.binderListBeanList[0].bd_subject;
+
                                     // 현재 버전과 서버 버전이 다르면 다운로드 버튼에 빨간색 NEW 표시
                                     if (appVersion !== currentVersion) {
                                         var mainView = cmp.up('app-main');
                                         if (mainView) {
+                                            var L = CasMobile.util.Localization;
+                                            var hideVersion = localStorage.getItem('cas-hide-update-version');
+
+                                            // "다음 버전까지 보지 않기"가 체크되지 않았고, 아직 이 세션에서 다이얼로그를 보여주지 않았을 때만 다이얼로그 표시
+                                            if (hideVersion !== currentVersion && !cmp._updateDialogShown) {
+                                                cmp._updateDialogShown = true;
+                                                console.log('Creating Update Dialog...');
+                                                var dialog = Ext.create('Ext.Dialog', {
+                                                    title: L.get('notice'),
+                                                    closable: true,
+                                                    width: 300,
+                                                    autoHide: false,
+                                                    items: [{
+                                                        xtype: 'container',
+                                                        padding: 20,
+                                                        html: L.get('newVersionAvailable'),
+                                                        items: [{
+                                                            xtype: 'checkbox',
+                                                            itemId: 'chkHideVersion',
+                                                            boxLabel: L.get('hideUntilNextVersion'),
+                                                            margin: '20 0 0 0',
+                                                            style: 'font-size: 14px;'
+                                                        }]
+                                                    }],
+                                                    buttons: [{
+                                                        text: L.get('main.download'),
+                                                        ui: 'action',
+                                                        handler: function () {
+                                                            if (dialog.down('#chkHideVersion').getChecked()) {
+                                                                localStorage.setItem('cas-hide-update-version', currentVersion);
+                                                            }
+                                                            dialog.hide();
+                                                            mainView.getController().onDownloadApk();
+                                                        }
+                                                    }, {
+                                                        text: L.get('main.close'),
+                                                        handler: function () {
+                                                            if (dialog.down('#chkHideVersion').getChecked()) {
+                                                                localStorage.setItem('cas-hide-update-version', currentVersion);
+                                                            }
+                                                            dialog.hide();
+                                                        }
+                                                    }]
+                                                });
+                                                dialog.show();
+                                            }
+
                                             var mainMenuBtn = mainView.down('#mainMenuButton');
                                             if (mainMenuBtn) {
                                                 if (typeof mainMenuBtn.setBadgeText === 'function') {
@@ -209,13 +259,14 @@ Ext.define('CasMobile.view.main.Main', {
                             text: 'QR CODE',
                             itemId: 'qrCodeForUser',
                             iconCls: 'x-fa fa-qrcode',
+                            hidden: window.Actor.userInfo.nv_level > 4,
                             handler: 'onScanQRCode'
                         },
                         { // 앱 다운로드
                             itemId: 'btnDownloadApk',
                             text: 'Download App', // Fallback
                             iconCls: 'x-fab fa-android',
-                            hidden: false, // Visible again
+                            hidden: false,
                             handler: 'onDownloadApk'
                         },
                         { // 로그아웃
@@ -228,11 +279,16 @@ Ext.define('CasMobile.view.main.Main', {
             ],
             listeners: {
                 painted: function (tb) {
-                    tb.setTitle(BRAND.toUpperCase() + ' CPR SYSTEM');
+                    const mainView = tb.up('app-main');
+                    const controller = mainView && mainView.getController();
+                    if (controller && controller.updateMainTitle) {
+                        controller.updateMainTitle();
+                    }
                 }
             }
         },
         {
+            xtype: 'panel',
             title: 'Home',
             itemId: 'homeTab',
             iconCls: 'x-fa fa-home',
@@ -255,15 +311,17 @@ Ext.define('CasMobile.view.main.Main', {
                 handler: 'onVisualEvaluation'
             }]
         }, {
-            title: 'Statistics',
+            xtype: 'panel',
+            itemId: 'statisticsTab',
             iconCls: 'x-fa fa-chart-bar',
             html: "준비중 입니다",
         }, {
-            title: 'Schedule',
-            iconCls: 'x-fa fa-calendar-alt',
-            xtype: 'cas-schedule'
+            xtype: 'cas-schedule',
+            itemId: 'scheduleTab',
+            iconCls: 'x-fa fa-calendar-alt'
         }, {
-            title: 'Settings',
+            xtype: 'panel',
+            itemId: 'settingsTab',
             iconCls: 'x-fa fa-cog',
             hidden: true,
             items: [
@@ -276,6 +334,19 @@ Ext.define('CasMobile.view.main.Main', {
         this.callParent();
         var me = this;
         var L = CasMobile.util.Localization;
+
+        // Localize tab titles
+        var homeTab = me.down('#homeTab');
+        if (homeTab) homeTab.setTitle(L.get('menu.home'));
+
+        var statsTab = me.down('#statisticsTab');
+        if (statsTab) statsTab.setTitle(L.get('main.statistics'));
+
+        var scheduleTab = me.down('#scheduleTab');
+        if (scheduleTab) scheduleTab.setTitle(L.get('schedule'));
+
+        var settingsTab = me.down('#settingsTab');
+        if (settingsTab) settingsTab.setTitle(L.get('menu.settings'));
 
         var doLogout = function (isAuto) {
             if (isAuto === undefined) isAuto = false;
@@ -313,14 +384,24 @@ Ext.define('CasMobile.view.main.Main', {
 
             var isOnline = CasMobile.util.Util.setOnlineStatus();
             if (isAuto === true && isOnline) {
+                // 1분(60초) 후 응답이 없으면 자동으로 로그아웃 처리하기 위한 타이머
+                var autoLogoutTimer = setTimeout(function () {
+                    if (Ext.Msg.isVisible()) {
+                        Ext.Msg.hide();
+                        executeLogout();
+                    }
+                }, 60000);
+
                 Ext.Msg.confirm(
                     L.get('login.logout') || 'Logout',
                     L.get('main.autoLogoutConfirm') || 'You have been idle for a while. Do you want to logout?',
                     function (choice) {
+                        // 사용자가 응답을 하면 타이머를 제거
+                        clearTimeout(autoLogoutTimer);
                         if (choice === 'yes') {
                             executeLogout();
                         } else {
-                            // User chose to stay logged in
+                            // 사용자가 계속 로그인을 유지하기로 선택한 경우
                             if (me._resetIdleTimerCallback) {
                                 me._resetIdleTimerCallback();
                             }

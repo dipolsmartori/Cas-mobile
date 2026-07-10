@@ -1,5 +1,6 @@
 /**
- * Controller for VisualEvaluationContainer functionality
+ * 시각 평가(Visual Evaluation) 화면의 동작을 관리하는 컨트롤러입니다.
+ * 평가 값 초기화, 비고(Remarks) 조회/저장, 비고 항목 UI 렌더링 및 선택 이벤트를 처리합니다.
  */
 Ext.define('CasMobile.view.evaluate.VisualEvaluationContainerController', {
     extend: 'Ext.app.ViewController',
@@ -7,9 +8,232 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationContainerController', {
 
     init: async function () {
         const view = this.getView();
+        this.remarkEntries = []; // 방어적 초기화
+
         if (view.getEvaluationValues()) {
             view.setEvaluationValues(view.getEvaluationValues());
         }
+
+        // 서버에서 비고(Remarks) 항목들을 가져와서 목록 구성
+        try {
+            const remarkSource = await this._getRemarkEntries();
+            if (remarkSource && remarkSource.binderView) {
+                let remarkStrings = remarkSource.binderView.bd_content;
+                if (!remarkStrings || remarkStrings === '') {
+                    remarkStrings = '[]';
+                }
+                this.remarkEntries = JSON.parse(remarkStrings);
+                this._setRemarkEntries(this.remarkEntries);
+            }
+        } catch (err) {
+            console.error('Failed to load remark entries', err);
+        }
+    },
+
+    /**
+     * 🆙🆙🆙 서버에서 비고(Remarks) 목록 데이터를 조회 (표준 JSON 반환)
+     */
+    _getRemarkEntries: function () {
+        return new Promise((resolve, reject) => {
+            Ext.Ajax.request({
+                url: CasMobile.APIs.getFullUrl(CasMobile.APIs.VIEW),
+                params: {
+                    ca_id: '01',
+                    bd_idx: window.siteInfo.remarks
+                },
+                success: (response) => {
+                    try {
+                        const data = JSON.parse(response.responseText);
+                        resolve(data);
+                    } catch (e) {
+                        reject(e);
+                    }
+                },
+                failure: (response) => reject(response)
+            });
+        });
+    },
+
+    /**
+     * 🆙🆙🆙 비고 항목 데이터를 서버에 저장
+     * UPDATE_DATA API는 JSONP 형태(null({...}))와 HTML <pre> 태그가 포함된 특수 포맷을 반환함
+     */
+    _saveRemarkEntries: function (value) {
+        return new Promise((resolve, reject) => {
+            Ext.Ajax.request({
+                url: CasMobile.APIs.getFullUrl(CasMobile.APIs.UPDATE_DATA),
+                method: 'POST',
+                params: {
+                    ca_id: '01',
+                    bd_idx: window.siteInfo.remarks,
+                    data_name: 'bd_content',
+                    data_val: value
+                },
+                success: (response) => {
+                    try {
+                        let text = response.responseText.trim();
+                        // 서버에서 반환되는 'null('과 ')'로 감싸진 JSONP 래퍼를 강제로 제거
+                        if (text.startsWith('null(') && text.endsWith(')')) {
+                            text = text.substring(5, text.length - 1);
+                        }
+
+                        // JSON 데이터 내의 문자열 값에 포함된 실제 줄바꿈 문자를 이스케이프 처리하여 파싱 에러 방지
+                        text = text.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+
+                        const data = Ext.decode(text, true);
+                        if (!data) {
+                            throw new Error('Failed to decode response: ' + text);
+                        }
+
+                        // html 필드 내의 <pre> 태그에서 실제 데이터를 파싱하여 remarks 프로퍼티에 할당
+                        if (data.html) {
+                            const match = data.html.match(/<pre>([\s\S]*)<\/pre>/);
+                            if (match) data.remarks = Ext.decode(match[1], true);
+                        }
+                        resolve(data);
+                    } catch (e) {
+                        reject(e);
+                    }
+                },
+                failure: (response) => reject(response)
+            });
+        });
+    },
+
+    _setRemarkEntries: function (entries) {
+        const me = this;
+        const remarkEntryCon = me.getView().down('#remarkEntryCon');
+        if (!remarkEntryCon) return;
+
+        remarkEntryCon.removeAll();
+        entries.forEach(entry => {
+            const unit = me._getRemarkUnit(entry);
+            unit.listeners = {
+                tap: {
+                    element: 'element',
+                    fn: () => me._onRemarkUnitTap(entry.et)
+                }
+            };
+            remarkEntryCon.add(unit);
+        });
+    },
+
+    _getRemarkUnit: function (entry) {
+        return {
+            xtype: 'component',
+            html: entry.et,
+            margin: '5 0',
+            padding: 10,
+            style: 'border: 1px solid #ddd; border-radius: 4px; background: #fff; font-size: 14px; cursor: pointer;'
+        };
+    },
+
+    _onRemarkUnitTap: function (text) {
+        const fldRemark = this.getView().down('#fldRemark');
+        const preVal = fldRemark.getValue();
+        let val = text;
+        if (preVal) {
+            val = `${preVal}\n${text}`;
+        }
+        fldRemark.setValue(val);
+    },
+
+    onUpdateRemarkEntries: function () {
+        const me = this;
+
+        const remarkListItems = me.remarkEntries.map((entry, index) => {
+            return {
+                xtype: 'container',
+                layout: 'hbox',
+                padding: '5 10',
+                margin: '5 0',
+                style: 'border: 1px solid #eee; border-radius: 8px; background: #f9f9f9;',
+                items: [
+                    {
+                        xtype: 'component',
+                        flex: 1,
+                        html: entry.et,
+                        style: 'font-size: 14px; color: #333; display: flex; align-items: center;'
+                    },
+                    {
+                        xtype: 'button',
+                        iconCls: 'x-fa fa-trash',
+                        ui: 'decline',
+                        handler: () => me._onRemoveRemarkEntry(index, dialog)
+                    }
+                ]
+            };
+        });
+
+        const dialog = Ext.create('Ext.Dialog', {
+            title: loc.main.manageRemarks || 'Manage Remarks',
+            width: 600,
+            maxWidth: '80%',
+            maxHeight: '80%',
+            closable: true,
+            layout: 'vbox',
+            scrollable: true,
+            padding: 15,
+            items: [
+                {
+                    xtype: 'container',
+                    itemId: 'remarkListCon',
+                    items: remarkListItems
+                },
+                {
+                    xtype: 'textareafield',
+                    itemId: 'newRemarkFld',
+                    label: loc.main.newRemark || 'New Remark',
+                    placeholder: loc.main.remarkPlaceholder || 'Enter new predefined remark...',
+                    margin: '20 0 0 0'
+                }
+            ],
+            buttons: [
+                {
+                    text: loc.main.add || 'Add',
+                    ui: 'action',
+                    handler: async () => {
+                        const fld = dialog.down('#newRemarkFld');
+                        const val = fld.getValue();
+                        if (val) {
+                            me.remarkEntries.push({ et: val });
+                            await me._saveRemarkEntries(JSON.stringify(me.remarkEntries));
+                            fld.setValue('');
+                            dialog.destroy();
+                            me._setRemarkEntries(me.remarkEntries);
+                            me.onUpdateRemarkEntries(); // Refresh list and reopen dialog
+                        }
+                    }
+                },
+                {
+                    text: loc.main.close || 'Close',
+                    handler: () => dialog.destroy()
+                }
+            ]
+        });
+        dialog.show();
+    },
+    /**
+     * Remark entr 삭제
+     * @param {*} index 
+     * @param {*} dialog 
+     */
+    _onRemoveRemarkEntry: function (index, dialog) {
+        const me = this;
+
+        Ext.Msg.confirm(
+            loc.main.warning || 'Warning',
+            loc.main.confirmDelete || 'Are you sure you want to delete this remark?',
+            async (choice) => {
+                if (choice === 'yes') {
+                    me.remarkEntries.splice(index, 1);
+                    await me._saveRemarkEntries(JSON.stringify(me.remarkEntries));
+                    if (dialog) dialog.destroy();
+                    me._setRemarkEntries(me.remarkEntries);
+                    me.onUpdateRemarkEntries(); // Refresh list and reopen dialog
+                }
+            }
+        );
     },
 
     onComboSelect: function (combo) {

@@ -1,5 +1,5 @@
 Ext.define('CasMobile.view.schedule.Schedule', {
-    extend: 'Ext.Container',
+    extend: 'Ext.Panel',
     xtype: 'cas-schedule',
     layout: 'fit',
 

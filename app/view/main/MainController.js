@@ -1,11 +1,11 @@
-Ext.define('CasMobile.view.main.MainController', {
+﻿Ext.define('CasMobile.view.main.MainController', {
     extend: 'Ext.app.ViewController',
     alias: 'controller.maincontroller',
 
     isOffline: false,
 
     init: function () {
-        var me = this;
+        let me = this;
         me.isOffline = !window.isOnline;
 
         CasMobile.app.on('projectselected', this.onProjectSelected, this);
@@ -17,18 +17,18 @@ Ext.define('CasMobile.view.main.MainController', {
         document.addEventListener('deviceready', function () {
             if (window.cordova && window.cordova.plugins && window.cordova.plugins.notification && window.cordova.plugins.notification.local) {
                 window.cordova.plugins.notification.local.on('click', function (notification) {
-                    var scheduleView = me.getView().down('cas-schedule');
+                    let scheduleView = me.getView().down('cas-schedule');
                     if (scheduleView) {
                         me.getView().setActiveItem(scheduleView);
-                        var data = notification.data;
+                        let data = notification.data;
                         if (typeof data === 'string') {
                             try { data = JSON.parse(data); } catch (e) { }
                         }
                         if (data && data.itemStr) {
-                            var ctrl = scheduleView.getController();
+                            let ctrl = scheduleView.getController();
                             if (ctrl && ctrl.openPopupEventAsync) {
                                 try {
-                                    var item = JSON.parse(data.itemStr);
+                                    let item = JSON.parse(data.itemStr);
                                     ctrl.openPopupEventAsync(item);
                                 } catch (e) {
                                     console.error('Failed to parse popup notification data', e);
@@ -42,50 +42,51 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     onBeforeActiveItemChange: function (container, toValue, fromValue) {
-        // 비주얼 평가 탭 클릭 시 팝업을 띄우고 홈 탭으로 이동하도록 처리 (기능적 숏컷)
+        // 鍮꾩＜???됯? ???대┃ ???앹뾽???꾩슦怨?????쑝濡??대룞?섎룄濡?泥섎━ (湲곕뒫???륁뻔)
         if (toValue && toValue.getItemId() === 'visualEvalTab') {
             this.onVisualEvaluation();
 
-            var homeTab = container.down('#homeTab');
+            let homeTab = container.down('#homeTab');
             if (homeTab && fromValue !== homeTab) {
                 container.setActiveItem(homeTab);
             }
             return false;
         }
+
     },
 
     showStartPopups: function () {
-        var me = this;
-        var categories = [
+        let me = this;
+        let categories = [
             { categoryId: window.siteInfo.categories.calendar['public'], params: {} },
             { categoryId: window.siteInfo.categories.calendar['private'], params: { participant: '|' + window.Actor.userInfo.nv_id + '|' } },
             { categoryId: window.siteInfo.categories.calendar['private'], params: { participant: '|' + window.Actor.userInfo.nv_group + '|' } }
         ];
 
-        var popupCount = 0;
+        let popupCount = 0;
         categories.forEach(function (cat) {
-            var requestParams = Ext.apply({
+            let requestParams = Ext.apply({
                 popup: 'yes',
                 ca_order: 2,
                 ca_id: cat.categoryId
             }, cat.params);
 
-            var url = CasMobile.APIs.getFullUrl(CasMobile.APIs.LIST_C);
+            let url = CasMobile.APIs.getFullUrl(CasMobile.APIs.LIST_C);
             Ext.Ajax.request({
                 url: url,
                 method: 'GET',
                 params: requestParams,
                 success: function (response) {
                     try {
-                        var data = JSON.parse(response.responseText);
+                        let data = JSON.parse(response.responseText);
                         if (data && data.binderListBeanList) {
                             data.binderListBeanList.forEach(function (item) {
                                 if (me.getCookieValue('notice_' + item.bd_idx) === '1') {
                                     return;
                                 }
-                                var duration = parseInt(item.c_duration, 10) || 7;
-                                var durationMs = duration * 24 * 60 * 60 * 1000;
-                                var startDate = new Date(item.c_start) || new Date(item.bd_regdate);
+                                let duration = parseInt(item.c_duration, 10) || 7;
+                                let durationMs = duration * 24 * 60 * 60 * 1000;
+                                let startDate = new Date(item.c_start) || new Date(item.bd_regdate);
                                 if (new Date() - startDate < durationMs) {
                                     me.createModernPopup(item, popupCount++);
                                 }
@@ -103,9 +104,9 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     getCookieValue: function (name) {
-        var localVal = window.localStorage.getItem(name);
+        let localVal = window.localStorage.getItem(name);
         if (localVal && localVal === '1') {
-            var expires = window.localStorage.getItem(name + '_expires');
+            let expires = window.localStorage.getItem(name + '_expires');
             if (!expires || new Date() < new Date(expires)) {
                 return '1';
             } else {
@@ -113,13 +114,13 @@ Ext.define('CasMobile.view.main.MainController', {
                 window.localStorage.removeItem(name + '_expires');
             }
         }
-        var match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+        let match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
         if (match) return match[2];
         return '';
     },
 
     setCookieValue: function (name, value, days) {
-        var date = new Date();
+        let date = new Date();
         date.setDate(date.getDate() + days);
         document.cookie = name + '=' + value + '; path=/; expires=' + date.toGMTString() + ';';
         window.localStorage.setItem(name, value);
@@ -127,14 +128,14 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     createModernPopup: function (item, index) {
-        var me = this;
+        let me = this;
         if (window.cordova && window.cordova.plugins && window.cordova.plugins.notification && window.cordova.plugins.notification.local) {
-            var div = document.createElement('div');
+            let div = document.createElement('div');
             div.innerHTML = item.bd_content;
-            var text = div.textContent || div.innerText || '';
+            let text = div.textContent || div.innerText || '';
             text = text.replace(/\s+/g, ' ').trim();
 
-            var scheduleNotification = function () {
+            let scheduleNotification = function () {
                 window.cordova.plugins.notification.local.schedule({
                     id: parseInt(item.bd_idx, 10),
                     title: item.bd_subject,
@@ -155,8 +156,8 @@ Ext.define('CasMobile.view.main.MainController', {
             });
         }
 
-        var loc = CasMobile.util.Localization;
-        var dialog = Ext.create('Ext.Dialog', {
+        let loc = CasMobile.util.Localization;
+        let dialog = Ext.create('Ext.Dialog', {
             title: item.bd_subject,
             layout: 'fit',
             width: '90%',
@@ -199,16 +200,32 @@ Ext.define('CasMobile.view.main.MainController', {
         this.callParent();
     },
 
+    updateMainTitle: function (projectName) {
+        if (projectName !== undefined) {
+            this.currentProjectName = projectName || '';
+        }
+
+        const brand = typeof BRAND !== 'undefined' ? BRAND : (window.BRAND || 'CAS');
+        const title = String(brand || 'CAS').toUpperCase() + ' CPR SYSTEM';
+        const toolbar = this.getView().down('#mainToolbar');
+        const selectedProjectName = this.currentProjectName;
+
+        if (toolbar) {
+            toolbar.setTitle(selectedProjectName ? title + ' - ' + selectedProjectName : title);
+        }
+    },
+
     onProjectSelected: function (params, callback) {
-        var me = this;
-        var homeTab = me.getView().down('#homeTab');
+        let me = this;
+        let homeTab = me.getView().down('#homeTab');
         if (!homeTab) return;
 
         me.getView().setActiveItem(homeTab);
+        me.updateMainTitle(params && params.projectName);
         me.isOffline = !window.isOnline;
 
         if (me.isOffline) {
-            console.warn('Offline mode – loading cached project data');
+            console.warn('Offline mode ??loading cached project data');
             me.loadProjectFromCache(params).then(function () {
                 if (callback) callback();
             });
@@ -225,14 +242,14 @@ Ext.define('CasMobile.view.main.MainController', {
                 homeTab.down('projectgrid').destroy();
             }
 
-            var grid = Ext.create('CasMobile.view.project.ProjectGrid', {
+            let grid = Ext.create('CasMobile.view.project.ProjectGrid', {
                 flex: 1,
                 params: params,
                 maxRound: maxRound
             });
 
             homeTab.add(grid);
-            var store = grid.getStore();
+            let store = grid.getStore();
             store.getProxy().setExtraParams(params);
             store.load({
                 callback: function () {
@@ -248,8 +265,8 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     loadProjectFromCache: function (params) {
-        var me = this;
-        var homeTab = me.getView().down('#homeTab');
+        let me = this;
+        let homeTab = me.getView().down('#homeTab');
         if (!homeTab) return Promise.resolve();
 
         homeTab.setHtml('');
@@ -262,8 +279,8 @@ Ext.define('CasMobile.view.main.MainController', {
                 return;
             }
 
-            var maxRound = result.maxRound;
-            var data = result.data;
+            let maxRound = result.maxRound;
+            let data = result.data;
 
             me._createRoundButtons(homeTab, maxRound);
             if (homeTab.down('projectgrid')) {
@@ -298,14 +315,14 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     _createRoundButtons: function (tab, maxRound) {
-        var me = this;
+        const me = this;
         if (maxRound <= 0) return;
 
-        var container = tab.down('#roundBtnContainer');
-        if (container) container.destroy();
+        const containerRow = tab.down('#roundBtnRow');
+        if (containerRow) containerRow.destroy();
 
-        var color = window.isOnline ? siteInfo.onlineColor : siteInfo.offlineColor;
-        var items = [{
+        const color = window.isOnline ? siteInfo.onlineColor : siteInfo.offlineColor;
+        const items = [{
             xtype: 'component',
             width: 40,
             height: 40,
@@ -323,32 +340,32 @@ Ext.define('CasMobile.view.main.MainController', {
             html: maxRound
         }];
 
-        var switchRound = function (btn) {
-            var grid = tab.down('projectgrid');
+        const switchRound = function (btn) {
+            const grid = tab.down('projectgrid');
             if (!grid) return;
 
-            var r = btn.round;
-            var label = btn.up().down('#selectedRound');
+            const r = btn.round;
+            const label = btn.up().down('#selectedRound');
             if (label) label.setHtml(r);
 
             grid.query('column').forEach(function (col) {
-                var colRound = col.round;
+                const colRound = col.round;
                 if (colRound) {
                     col.setHidden(colRound !== r);
                 }
             });
 
             Ext.defer(function () {
-                var scroller = grid.getScrollable();
+                const scroller = grid.getScrollable();
                 if (scroller) {
-                    var y = scroller.getPosition().y;
-                    var maxX = scroller.getMaxPosition().x;
+                    const y = scroller.getPosition().y;
+                    const maxX = scroller.getMaxPosition().x;
                     scroller.scrollTo(maxX, y, { animation: true });
                 }
             }, 150);
         };
 
-        for (var i = 1; i <= maxRound; i++) {
+        for (let i = 1; i <= maxRound; i++) {
             items.push({
                 xtype: 'button',
                 text: i.toString(),
@@ -372,13 +389,13 @@ Ext.define('CasMobile.view.main.MainController', {
                 height: 40,
                 cls: 'round-btn',
                 handler: function (btn) {
-                    var grid = tab.down('projectgrid');
+                    const grid = tab.down('projectgrid');
                     if (!grid) return;
-                    var newRound = maxRound + 1;
-                    var store = grid.getStore();
+                    const newRound = maxRound + 1;
+                    const store = grid.getStore();
                     if (!store) return;
 
-                    var records = store.getRange() || [];
+                    const records = store.getRange() || [];
                     records.forEach(function (rec) {
                         rec.set('round' + newRound, { round: newRound });
                     });
@@ -388,8 +405,8 @@ Ext.define('CasMobile.view.main.MainController', {
                     grid.buildColumns(newRound);
 
                     Ext.defer(function () {
-                        var buttons = tab.query('button');
-                        var nextBtn = buttons.find(function (b) { return b.round === newRound; });
+                        const buttons = tab.query('button');
+                        const nextBtn = buttons.find(function (b) { return b.round === newRound; });
                         if (nextBtn) switchRound(nextBtn);
                     }, 100);
                 }
@@ -398,11 +415,36 @@ Ext.define('CasMobile.view.main.MainController', {
 
         tab.insert(0, {
             xtype: 'container',
-            itemId: 'roundBtnContainer',
+            itemId: 'roundBtnRow',
             width: '100%',
-            layout: { type: 'hbox', pack: 'center', align: 'center' },
-            padding: '10 0 10 0',
-            items: items
+            layout: { type: 'hbox', align: 'center' },
+            padding: '10 10 10 10',
+            items: [{
+                xtype: 'container',
+                width: 50
+            }, {
+                xtype: 'container',
+                itemId: 'roundBtnContainer',
+                flex: 1,
+                layout: { type: 'hbox', pack: 'center', align: 'center' },
+                items: items
+            }, { // 스토어 초기화
+                xtype: 'button',
+                iconCls: 'x-fa fas fa-sync-alt',
+                ui: 'action',
+                width: 40,
+                height: 40,
+                cls: 'round-btn',
+                handler: 'onClearSearchFilter'
+            }, {// 검색
+                xtype: 'button',
+                iconCls: 'x-fa fa-search',
+                ui: 'action',
+                width: 40,
+                height: 40,
+                cls: 'round-btn',
+                handler: 'onSearch'
+            }]
         });
     },
 
@@ -412,7 +454,7 @@ Ext.define('CasMobile.view.main.MainController', {
                 resolve(0);
                 return;
             }
-            var url = CasMobile.APIs.getFullUrl(CasMobile.APIs.COLS_DATA_SUM);
+            let url = CasMobile.APIs.getFullUrl(CasMobile.APIs.COLS_DATA_SUM);
             Ext.Ajax.request({
                 url: url,
                 method: 'GET',
@@ -424,8 +466,8 @@ Ext.define('CasMobile.view.main.MainController', {
                 },
                 success: function (response) {
                     try {
-                        var data = Ext.decode(response.responseText);
-                        var max = (data && data[0] && data[0].calc) ? data[0].calc.max : 0;
+                        let data = Ext.decode(response.responseText);
+                        let max = (data && data[0] && data[0].calc) ? data[0].calc.max : 0;
                         resolve(max);
                     } catch (e) {
                         console.error('Error parsing max round logic:', e);
@@ -441,17 +483,17 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     onQrRecordFound: function (record, roundInfo) {
-        var me = this;
-        var mainView = me.getView();
-        var grid = mainView.down('projectgrid');
+        let me = this;
+        let mainView = me.getView();
+        let grid = mainView.down('projectgrid');
         if (!grid || !record) return;
 
         if (roundInfo) {
-            var round = (typeof roundInfo === 'object') ? roundInfo.round : roundInfo;
-            var container = mainView.down('#roundBtnContainer');
+            let round = (typeof roundInfo === 'object') ? roundInfo.round : roundInfo;
+            let container = mainView.down('#roundBtnContainer');
             if (container) {
-                var btns = container.query('button');
-                var btn = btns.find(function (b) { return b.round === round; });
+                let btns = container.query('button');
+                let btn = btns.find(function (b) { return b.round === round; });
                 if (btn && btn.getHandler()) {
                     btn.getHandler().call(btn, btn);
                 }
@@ -462,43 +504,179 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     onVisualEvaluation: function () {
-        var view = Ext.ComponentQuery.query('visualevaluationwindow');
+        let view = Ext.ComponentQuery.query('visualevaluationwindow');
         if (view && view.length > 0) {
             view[0].show();
             return;
         }
 
-        var homeTab = this.getView().down('#homeTab');
-        var grid = homeTab.down('projectgrid');
+        let homeTab = this.getView().down('#homeTab');
+        let grid = homeTab.down('projectgrid');
         if (!grid) {
             Ext.Msg.alert('Notice', CasMobile.util.Localization.get('main.selectProject'));
             return;
         }
-        var maxRound = grid.getMaxRound();
+        let maxRound = grid.getMaxRound();
         Ext.create('CasMobile.view.evaluate.VisualEvaluationWindow', { maxRound: maxRound }).show();
     },
 
+    onSearch: function () {
+        const me = this;
+        const homeTab = me.getView().down('#homeTab');
+        const grid = homeTab ? homeTab.down('projectgrid') : null;
+        if (!grid) {
+            Ext.Msg.alert('Notice', CasMobile.util.Localization.get('main.selectProject'));
+            return;
+        }
+
+        const store = grid.getStore();
+        if (!store) return;
+
+        const searchDialog = Ext.create('Ext.Dialog', {
+            title: 'Search',
+            closable: true,
+            width: '90%',
+            maxWidth: 460,
+            autoHide: false,
+            items: [{
+                xtype: 'container',
+                padding: 16,
+                layout: 'vbox',
+                defaults: {
+                    xtype: 'textfield',
+                    labelAlign: 'top',
+                    clearable: true
+                },
+                items: [{
+                    itemId: 'searchKeyword',
+                    label: 'Keyword',
+                    placeHolder: 'All fields / round values'
+                }, {
+                    itemId: 'searchAssemblyCo',
+                    label: 'Assembly Co',
+                    placeHolder: 'assemblyCo only'
+                }, {
+                    itemId: 'searchRawMaterialCo',
+                    label: 'Raw Material Co',
+                    placeHolder: 'rawMaterialCo only'
+                }]
+            }],
+            buttons: [{
+                text: 'Clear',
+                handler: function (btn) {
+                    const dialog = btn.up('dialog');
+                    const keywordField = dialog.down('#searchKeyword');
+                    const assemblyField = dialog.down('#searchAssemblyCo');
+                    const rawField = dialog.down('#searchRawMaterialCo');
+                    if (keywordField) keywordField.setValue('');
+                    if (assemblyField) assemblyField.setValue('');
+                    if (rawField) rawField.setValue('');
+                    store.clearFilter();
+                }
+            }, {
+                text: 'Search',
+                ui: 'action',
+                handler: function (btn) {
+                    const dialog = btn.up('dialog');
+                    const keywordField = dialog.down('#searchKeyword');
+                    const assemblyField = dialog.down('#searchAssemblyCo');
+                    const rawField = dialog.down('#searchRawMaterialCo');
+                    const keyword = keywordField ? (keywordField.getValue() || '') : '';
+                    const assemblyCoKeyword = assemblyField ? (assemblyField.getValue() || '') : '';
+                    const rawMaterialCoKeyword = rawField ? (rawField.getValue() || '') : '';
+
+                    const normalizedKeyword = keyword.toLowerCase().trim();
+                    const normalizedAssembly = assemblyCoKeyword.toLowerCase().trim();
+                    const normalizedRawMaterial = rawMaterialCoKeyword.toLowerCase().trim();
+
+                    store.clearFilter();
+
+                    if (!normalizedKeyword && !normalizedAssembly && !normalizedRawMaterial) {
+                        dialog.hide();
+                        return;
+                    }
+
+                    const contains = function (value, needle) {
+                        if (!needle) return true;
+                        if (value === null || value === undefined) return false;
+                        return String(value).toLowerCase().indexOf(needle) !== -1;
+                    };
+
+                    store.filterBy(function (record) {
+                        const assemblyMatch = contains(record.get('assemblyCo'), normalizedAssembly);
+                        if (!assemblyMatch) return false;
+
+                        const rawMaterialMatch = contains(record.get('rawMaterialCo'), normalizedRawMaterial);
+                        if (!rawMaterialMatch) return false;
+
+                        if (!normalizedKeyword) return true;
+
+                        const fields = ['partNumber', 'assyTrim', 'partName2', 'assemblyCo', 'rawMaterialCo', 'bd_subject'];
+                        const matched = fields.some(function (field) {
+                            return contains(record.get(field), normalizedKeyword);
+                        });
+                        if (matched) return true;
+
+                        const maxRound = grid.getMaxRound ? grid.getMaxRound() : 0;
+                        for (let i = 1; i <= maxRound; i++) {
+                            const roundData = record.get('round' + i);
+                            if (!roundData) continue;
+                            for (const k in roundData) {
+                                if (!roundData.hasOwnProperty(k)) continue;
+                                if (contains(roundData[k], normalizedKeyword)) {
+                                    return true;
+                                }
+                            }
+                        }
+
+                        return false;
+                    });
+
+                    dialog.hide();
+                }
+            }, {
+                text: 'Cancel',
+                handler: function (btn) {
+                    btn.up('dialog').hide();
+                }
+            }]
+        });
+
+        searchDialog.show();
+    },
+
+    onClearSearchFilter: function () {
+        const homeTab = this.getView().down('#homeTab');
+        const grid = homeTab ? homeTab.down('projectgrid') : null;
+        if (!grid) return;
+
+        const store = grid.getStore();
+        if (!store) return;
+
+        store.clearFilter();
+    },
+
     onDownloadOfflineData: function () {
-        var me = this;
-        var grid = me.getView().down('projectgrid');
+        let me = this;
+        let grid = me.getView().down('projectgrid');
         if (!grid) {
             Ext.Msg.alert('Notice', loc.selectProjectFirst);
             return;
         }
 
-        var store = grid.getStore();
-        var proxy = store.getProxy();
-        var url = proxy.url;
-        var params = Ext.apply({ page_size: 2000 }, proxy.extraParams);
+        let store = grid.getStore();
+        let proxy = store.getProxy();
+        let url = proxy.url;
+        let params = Ext.apply({ page_size: 2000 }, proxy.extraParams);
 
-        var fetchProject = new Promise(function (resolve, reject) {
+        let fetchProject = new Promise(function (resolve, reject) {
             Ext.Ajax.request({
                 url: url,
                 method: 'GET',
                 params: params,
                 withCredentials: true,
                 success: function (res) {
-                    var data = Ext.decode(res.responseText);
+                    let data = Ext.decode(res.responseText);
                     if (data && data.binderList) resolve(data.binderList);
                     else reject('Invalid project data');
                 },
@@ -506,12 +684,12 @@ Ext.define('CasMobile.view.main.MainController', {
             });
         });
 
-        var fetchCars = new Promise(function (resolve) {
-            var carStore = Ext.getStore('carModelStore');
+        let fetchCars = new Promise(function (resolve) {
+            let carStore = Ext.getStore('carModelStore');
             if (carStore && carStore.isLoaded() && carStore.getCount() > 0) {
                 resolve(carStore.getRange().map(function (r) { return r.getData(); }));
             } else {
-                var tempStore = Ext.create('CasMobile.store.CarModels', { autoLoad: false });
+                let tempStore = Ext.create('CasMobile.store.CarModels', { autoLoad: false });
                 tempStore.load({
                     callback: function (recs, op, success) {
                         if (success) resolve(recs.map(function (r) { return r.getData(); }));
@@ -523,27 +701,27 @@ Ext.define('CasMobile.view.main.MainController', {
         });
 
         Promise.all([fetchProject, fetchCars]).then(function (results) {
-            var binderList = results[0];
-            var carModels = results[1];
-            var datasetId = params.datasetId || params.ca_id;
-            var gridParams = grid.params || {};
+            let binderList = results[0];
+            let carModels = results[1];
+            let datasetId = params.datasetId || params.ca_id;
+            let gridParams = grid.params || {};
 
-            var dbReq = indexedDB.open('CasOfflineDB', 2);
+            let dbReq = indexedDB.open('CasOfflineDB', 2);
             dbReq.onupgradeneeded = function (e) {
-                var db = e.target.result;
+                let db = e.target.result;
                 if (!db.objectStoreNames.contains('evaluations')) {
                     db.createObjectStore('evaluations', { keyPath: '_compositeId' });
                 }
             };
             dbReq.onsuccess = function (e) {
-                var db = e.target.result;
-                var tx = db.transaction(['evaluations'], 'readwrite');
-                var store = tx.objectStore('evaluations');
+                let db = e.target.result;
+                let tx = db.transaction(['evaluations'], 'readwrite');
+                let store = tx.objectStore('evaluations');
 
                 // Clear existing for this tab
-                var cursorReq = store.openCursor();
+                let cursorReq = store.openCursor();
                 cursorReq.onsuccess = function (evt) {
-                    var cursor = evt.target.result;
+                    let cursor = evt.target.result;
                     if (cursor) {
                         if (cursor.value._tabId === datasetId) cursor.delete();
                         cursor.continue();
@@ -557,12 +735,12 @@ Ext.define('CasMobile.view.main.MainController', {
                 });
             };
 
-            var cacheReq = indexedDB.open('CasMobileCache', 3);
+            let cacheReq = indexedDB.open('CasMobileCache', 3);
             cacheReq.onsuccess = function (e) {
-                var db = e.target.result;
-                var tx = db.transaction(['gridData'], 'readwrite');
-                var store = tx.objectStore('gridData');
-                var cacheObj = {
+                let db = e.target.result;
+                let tx = db.transaction(['gridData'], 'readwrite');
+                let store = tx.objectStore('gridData');
+                let cacheObj = {
                     projectName: gridParams.projectName || 'Unknown Project',
                     idStr: gridParams.idStr || datasetId,
                     ca_id: gridParams.ca_id || window.siteInfo.categories.evaluationDataCategory,
@@ -582,43 +760,43 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     onUpdateToServer: function () {
-        var me = this;
-        var loc = CasMobile.util.Localization;
-        var mainView = me.getView();
+        let me = this;
+        let loc = CasMobile.util.Localization;
+        let mainView = me.getView();
         if (!window.isOnline) {
             Ext.Msg.alert(loc.get('main.warning'), loc.get('errors.networkConnection'));
             return;
         }
 
-        var dbReq = indexedDB.open('CasMobileCache', 3);
+        let dbReq = indexedDB.open('CasMobileCache', 3);
         dbReq.onsuccess = function (e) {
-            var db = e.target.result;
-            var tx = db.transaction(['gridData'], 'readonly');
-            var store = tx.objectStore('gridData');
-            var getAll = store.getAll();
-            var getKeys = store.getAllKeys();
+            let db = e.target.result;
+            let tx = db.transaction(['gridData'], 'readonly');
+            let store = tx.objectStore('gridData');
+            let getAll = store.getAll();
+            let getKeys = store.getAllKeys();
 
             Promise.all([
                 new Promise(function (r) { getAll.onsuccess = function (ev) { r(ev.target.result); }; }),
                 new Promise(function (r) { getKeys.onsuccess = function (ev) { r(ev.target.result); }; })
             ]).then(function (results) {
-                var dataList = results[0];
-                var keyList = results[1];
-                var syncList = [];
+                let dataList = results[0];
+                let keyList = results[1];
+                let syncList = [];
 
-                for (var i = 0; i < dataList.length; i++) {
-                    var key = keyList[i];
+                for (let i = 0; i < dataList.length; i++) {
+                    let key = keyList[i];
                     if (key === 'car_models') continue;
-                    var item = dataList[i];
-                    var records = Array.isArray(item) ? item : item.dataByBdIdx;
-                    var pendingCount = 0;
+                    let item = dataList[i];
+                    let records = Array.isArray(item) ? item : item.dataByBdIdx;
+                    let pendingCount = 0;
                     if (records) {
                         pendingCount = records.filter(function (r) { return r.isUpdatedOffline; }).length;
                     }
                     if (pendingCount > 0) {
-                        var dateStr = '';
+                        let dateStr = '';
                         if (item.timestamp) {
-                            var d = new Date(item.timestamp);
+                            let d = new Date(item.timestamp);
                             dateStr = d.getFullYear().toString().slice(-2) + '/' + ('0' + (d.getMonth() + 1)).slice(-2) + '/' + ('0' + d.getDate()).slice(-2);
                         }
                         syncList.push({
@@ -643,11 +821,11 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     showSyncDialog: function (syncList) {
-        var me = this;
-        var loc = CasMobile.util.Localization;
-        var store = Ext.create('Ext.data.Store', { data: syncList });
+        let me = this;
+        let loc = CasMobile.util.Localization;
+        let store = Ext.create('Ext.data.Store', { data: syncList });
 
-        var dialog = Ext.create('Ext.Dialog', {
+        let dialog = Ext.create('Ext.Dialog', {
             title: loc.get('main.selectProject') || 'Select Project',
             layout: 'fit',
             width: 500,
@@ -680,26 +858,26 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     startSync: function (projectData) {
-        var me = this;
-        var loc = CasMobile.util.Localization;
-        var view = me.getView();
+        let me = this;
+        let loc = CasMobile.util.Localization;
+        let view = me.getView();
         view.setMasked({ xtype: 'loadmask', message: loc.get('upload.syncingOfflineData') });
 
-        var successCount = 0;
-        var failCount = 0;
-        var records = projectData.records.filter(function (r) { return r.isUpdatedOffline; });
-        var total = records.length;
+        let successCount = 0;
+        let failCount = 0;
+        let records = projectData.records.filter(function (r) { return r.isUpdatedOffline; });
+        let total = records.length;
 
         if (total === 0) {
             view.setMasked(false);
             return;
         }
 
-        var processSync = function (index) {
+        let processSync = function (index) {
             if (index >= total) {
                 view.setMasked(false);
-                var callback = function () {
-                    var grid = view.down('projectgrid');
+                let callback = function () {
+                    let grid = view.down('projectgrid');
                     if (grid && grid.params) me.onProjectSelected(grid.params);
                 };
                 if (failCount === 0) {
@@ -710,18 +888,18 @@ Ext.define('CasMobile.view.main.MainController', {
                 return;
             }
 
-            var rec = records[index];
-            var bd_idx = rec.bd_idx;
-            var bd_data = rec.bd_data || [];
-            var roundData = bd_data.filter(function (c) { return c.cols_code && c.cols_code.startsWith('round') && c.isUpdatedOffline; });
+            let rec = records[index];
+            let bd_idx = rec.bd_idx;
+            let bd_data = rec.bd_data || [];
+            let roundData = bd_data.filter(function (c) { return c.cols_code && c.cols_code.startsWith('round') && c.isUpdatedOffline; });
 
-            var roundSync = function (rIdx) {
+            let roundSync = function (rIdx) {
                 if (rIdx >= roundData.length) {
                     processSync(index + 1);
                     return;
                 }
-                var col = roundData[rIdx];
-                var params = {
+                let col = roundData[rIdx];
+                let params = {
                     ca_id: projectData.ca_id,
                     bd_idx: bd_idx,
                     lastRound: 13 // Max allowed
@@ -750,36 +928,36 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     getOfflineProjectData: function (tabId) {
-        var me = this;
+        let me = this;
         return new Promise(function (resolve) {
-            var dbReq = indexedDB.open('CasOfflineDB', 2);
+            let dbReq = indexedDB.open('CasOfflineDB', 2);
             dbReq.onsuccess = function (e) {
-                var db = e.target.result;
+                let db = e.target.result;
                 if (!db.objectStoreNames.contains('evaluations')) {
                     resolve(null);
                     return;
                 }
-                var tx = db.transaction(['evaluations'], 'readonly');
-                var store = tx.objectStore('evaluations');
-                var req = store.getAll();
+                let tx = db.transaction(['evaluations'], 'readonly');
+                let store = tx.objectStore('evaluations');
+                let req = store.getAll();
                 req.onsuccess = function (ev) {
-                    var all = ev.target.result;
-                    var filtered = all.filter(function (r) { return r._tabId === tabId; });
+                    let all = ev.target.result;
+                    let filtered = all.filter(function (r) { return r._tabId === tabId; });
                     if (!filtered || filtered.length === 0) {
                         me.getLegacyOfflineProjectData(tabId).then(resolve);
                         return;
                     }
-                    var maxRound = 0;
-                    var mapped = filtered.map(function (row) {
-                        var rec = Ext.apply({}, row);
+                    let maxRound = 0;
+                    let mapped = filtered.map(function (row) {
+                        let rec = Ext.apply({}, row);
                         if (rec.bd_data) {
                             rec.bd_data.forEach(function (col) {
                                 if (col.cols_code && col.cols_code.indexOf('round') !== -1) {
                                     if (col.data_val) {
                                         try {
-                                            var val = JSON.parse(col.data_val);
+                                            let val = JSON.parse(col.data_val);
                                             rec[col.cols_code] = Array.isArray(val) ? val[0] : val;
-                                            var rNum = parseInt(col.cols_code.replace('round', ''), 10);
+                                            let rNum = parseInt(col.cols_code.replace('round', ''), 10);
                                             if (!isNaN(rNum) && rNum > maxRound) maxRound = rNum;
                                         } catch (e) { }
                                     }
@@ -799,31 +977,31 @@ Ext.define('CasMobile.view.main.MainController', {
 
     getLegacyOfflineProjectData: function (tabId) {
         return new Promise(function (resolve) {
-            var cacheReq = indexedDB.open('CasMobileCache', 3);
+            let cacheReq = indexedDB.open('CasMobileCache', 3);
             cacheReq.onsuccess = function (e) {
-                var db = e.target.result;
+                let db = e.target.result;
                 if (!db.objectStoreNames.contains('gridData')) {
                     resolve(null);
                     return;
                 }
-                var tx = db.transaction(['gridData'], 'readonly');
-                var store = tx.objectStore('gridData');
-                var req = store.get(tabId);
+                let tx = db.transaction(['gridData'], 'readonly');
+                let store = tx.objectStore('gridData');
+                let req = store.get(tabId);
                 req.onsuccess = function (ev) {
-                    var item = ev.target.result;
+                    let item = ev.target.result;
                     if (!item) { resolve(null); return; }
-                    var records = Array.isArray(item) ? item : item.dataByBdIdx;
+                    let records = Array.isArray(item) ? item : item.dataByBdIdx;
                     if (!records) { resolve(null); return; }
-                    var maxRound = 0;
-                    var mapped = records.map(function (row) {
-                        var rec = Ext.apply({}, row);
+                    let maxRound = 0;
+                    let mapped = records.map(function (row) {
+                        let rec = Ext.apply({}, row);
                         if (rec.bd_data) {
                             rec.bd_data.forEach(function (col) {
                                 if (col.cols_code && col.cols_code.indexOf('round') !== -1) {
                                     if (col.data_val) {
                                         try {
                                             rec[col.cols_code] = JSON.parse(col.data_val)[0];
-                                            var rNum = parseInt(col.cols_code.replace('round', ''), 10);
+                                            let rNum = parseInt(col.cols_code.replace('round', ''), 10);
                                             if (!isNaN(rNum) && rNum > maxRound) maxRound = rNum;
                                         } catch (e) { }
                                     }
@@ -842,7 +1020,7 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     onScanQRCode: function () {
-        var dialog = Ext.create('Ext.Dialog', {
+        let dialog = Ext.create('Ext.Dialog', {
             title: 'QR CODE',
             closable: true,
             layout: 'vbox',
@@ -850,7 +1028,7 @@ Ext.define('CasMobile.view.main.MainController', {
             items: [{ xtype: 'container', itemId: 'qrContainer', width: 130, height: 130 }],
             listeners: {
                 painted: function (comp) {
-                    var container = comp.down('#qrContainer');
+                    let container = comp.down('#qrContainer');
                     new QRCode(container.el.dom, {
                         text: Actor.userInfo.nv_id,
                         width: 130,
@@ -864,11 +1042,11 @@ Ext.define('CasMobile.view.main.MainController', {
         dialog.show();
     },
     /**
-     * 다은로드 app
+     * ?ㅼ?濡쒕뱶 app
      */
     onDownloadApk: function () {
-        var loc = CasMobile.util.Localization;
-        var dialog = Ext.create('Ext.Dialog', {
+        let loc = CasMobile.util.Localization;
+        let dialog = Ext.create('Ext.Dialog', {
             title: loc.get('apkInstallTitle') || 'CPR MOBILE App Installation',
             closable: true,
             maximizable: false,
@@ -888,19 +1066,19 @@ Ext.define('CasMobile.view.main.MainController', {
                 margin: '0 0 0 5',
                 hidden: false,
                 handler: function () {
-                    var brand = window.BRAND || '';
+                    let brand = window.BRAND || '';
                     if (brand === 'hyundai') brand = '';
 
-                    var host = brand ? brand + '.hmgcolor.com' : 'hmgcolor.com';
-                    var url = 'https://' + host + '/binder/down/5423/0';
+                    let host = brand ? brand + '.hmgcolor.com' : 'hmgcolor.com';
+                    let url = 'https://' + host + '/binder/down/5423/0';
 
                     console.log('Final APK Download URL: ' + url);
 
-                    var isMobile = !!(window.cordova || Ext.os.is.Android || Ext.os.is.Phone || window.location.protocol === 'file:');
+                    let isMobile = !!(window.cordova || Ext.os.is.Android || Ext.os.is.Phone || window.location.protocol === 'file:');
 
                     if (isMobile) {
                         dialog.close();
-                        var webUrl = 'https://' + host + '/actor/m/index.html';
+                        let webUrl = 'https://' + host + '/actor/m/index.html';
                         Ext.Msg.confirm(
                             loc.get('main.warning') || 'Notice',
                             (loc.get('downloadWebRedirectMsg') || 'APK downloads require a browser login. Go to the web version?'),
@@ -935,7 +1113,7 @@ Ext.define('CasMobile.view.main.MainController', {
     },
 
     onShowProjectMenu: function () {
-        var menu = this.getView().projectMenu;
+        let menu = this.getView().projectMenu;
         if (!menu || menu.destroyed) {
             menu = Ext.create('CasMobile.view.ProjectMenu');
             this.getView().projectMenu = menu;
