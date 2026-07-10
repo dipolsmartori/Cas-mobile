@@ -70,13 +70,6 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         CasMobile.activeTab = this;
         me.setMeasurementEvaluationCompact(me.shouldCompactMeasurementEvaluation());
         me.buildColumns(me.getMaxRound());
-
-        me.element.on({
-            tap: function(e) {
-                me.onMeasurementEvaluationToggleTap(e);
-            },
-            delegate: '.project-round-toggle'
-        });
     },
 
     // Handle updates when maxRound changes (e.g. after sync or project selection)
@@ -98,19 +91,7 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
     },
 
     getRoundHeaderText: function(roundNum) {
-        var compact = this.getMeasurementEvaluationCompact();
-        var iconCls = compact ? 'x-fa fas fa-expand' : 'x-fa fas fa-compress';
-        var title = compact ? 'Expand Measurement Evaluation' : 'Shrink Measurement Evaluation';
-        var handler = 'var grid=Ext.getCmp(&quot;' + this.getId() + '&quot;); return grid && grid.toggleMeasurementEvaluationColumns(event);';
-        var headerStyle = 'display:block;position:relative;width:100%;min-height:22px;line-height:22px;text-align:center;box-sizing:border-box;padding:0 28px;';
-        var toggleStyle = 'position:absolute;left:0;top:0;display:inline-flex;align-items:center;justify-content:center;width:24px;height:22px;color:#004F9F;cursor:pointer;';
-
-        return '<span class="project-round-header" style="' + headerStyle + '">' +
-            '<span class="project-round-toggle" style="' + toggleStyle + '" title="' + title + '" onclick="' + handler + '">' +
-                '<i class="' + iconCls + '" style="font-size:14px;line-height:22px;"></i>' +
-            '</span>' +
-            '<span class="project-round-title">Round ' + roundNum + '</span>' +
-        '</span>';
+        return 'Round ' + roundNum;
     },
 
     getCompactMeasurementColumnWidth: function(col) {
@@ -132,8 +113,22 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
     },
 
     onMeasurementEvaluationToggleTap: function(e) {
-        e.stopEvent();
+        if (e && e.stopEvent) {
+            e.stopEvent();
+        }
+
         this.toggleMeasurementEvaluationColumns();
+    },
+
+    isRoundToggleTap: function(column, e) {
+        var headerRegion = column && column.headerElement && column.headerElement.getRegion();
+        var point = e && e.getPoint ? e.getPoint() : null;
+
+        return !!(headerRegion && point &&
+            point.x >= headerRegion.left &&
+            point.x <= headerRegion.left + 36 &&
+            point.y >= headerRegion.top &&
+            point.y <= headerRegion.bottom);
     },
 
     toggleMeasurementEvaluationColumns: function(e) {
@@ -157,8 +152,16 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         if (!me.isInitialized || !me.query) return;
 
         me.query('column').forEach(function(col) {
-            if (col.roundGroupHeader && col.setText) {
-                col.setText(me.getRoundHeaderText(col.round));
+            if (col.roundGroupHeader) {
+                if (col.setText) {
+                    col.setText(me.getRoundHeaderText(col.round));
+                }
+
+                if (col.toggleCls) {
+                    col.toggleCls('project-round-compact', me.getMeasurementEvaluationCompact());
+                } else if (col.addCls && col.removeCls) {
+                    col[me.getMeasurementEvaluationCompact() ? 'addCls' : 'removeCls']('project-round-compact');
+                }
             }
 
             if (col.measurementEvaluationColumn && col.setWidth) {
@@ -205,12 +208,12 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
                     text: me.getRoundHeaderText(roundNum),
                     round: roundNum,
                     roundGroupHeader: true,
+                    cls: 'project-round-toggle-column' + (me.getMeasurementEvaluationCompact() ? ' project-round-compact' : ''),
                     dataIndex: 'round' + roundNum,
                     hidden: roundNum !== maxRound,
                     listeners: {
                         tap: function(column, e) {
-                            var target = e && e.getTarget ? e.getTarget('.project-round-toggle') : null;
-                            if (target) {
+                            if (me.isRoundToggleTap(column, e)) {
                                 me.onMeasurementEvaluationToggleTap(e);
                             }
                         }
