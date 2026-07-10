@@ -51,10 +51,10 @@
 
 .cas-statistics-wrap {
     align-items: flex-start;
-    display: flex;
+    display: grid;
     gap: 10px;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
     min-height: 360px;
-    overflow-x: auto;
     padding: 10px 10px 20px;
 }
 
@@ -62,7 +62,7 @@
     background: #fff;
     border: 1px solid #ccc;
     box-sizing: border-box;
-    flex: 0 0 260px;
+    min-width: 0;
     padding: 6px;
 }
 
