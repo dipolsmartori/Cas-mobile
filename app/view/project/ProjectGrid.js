@@ -253,7 +253,11 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
 
     syncMeasurementEvaluationColumns: function() {
         var me = this;
-        if (!me.isInitialized) return;
+
+        if (me.destroyed || me.destroying) {
+            me.logMeasurementToggle('sync skipped because grid is destroyed');
+            return;
+        }
 
         me.eachProjectColumn(function(col) {
             if (col.roundGroupHeader) {
