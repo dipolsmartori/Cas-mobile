@@ -217,11 +217,45 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         this.syncMeasurementEvaluationColumns();
     },
 
+    eachProjectColumn: function(fn) {
+        var me = this;
+        var headerCt = me.getHeaderContainer && me.getHeaderContainer();
+        var seen = {};
+        var count = 0;
+        var visit = function(col) {
+            var id;
+
+            if (!col) return;
+
+            id = col.getId ? col.getId() : col.id;
+            if (id && seen[id]) return;
+            if (id) seen[id] = true;
+
+            count++;
+            fn(col);
+        };
+
+        if (headerCt && headerCt.visitPreOrder) {
+            headerCt.visitPreOrder('gridcolumn', visit);
+        }
+
+        if (headerCt && headerCt.getColumns) {
+            Ext.Array.each(headerCt.getColumns(), visit);
+        }
+
+        if (me.query) {
+            Ext.Array.each(me.query('gridcolumn'), visit);
+            Ext.Array.each(me.query('column'), visit);
+        }
+
+        me.logMeasurementToggle('columns scanned', { count: count });
+    },
+
     syncMeasurementEvaluationColumns: function() {
         var me = this;
-        if (!me.isInitialized || !me.query) return;
+        if (!me.isInitialized) return;
 
-        me.query('column').forEach(function(col) {
+        me.eachProjectColumn(function(col) {
             if (col.roundGroupHeader) {
                 if (col.setText) {
                     col.setText(me.getRoundHeaderText(col.round));
