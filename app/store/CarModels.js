@@ -14,6 +14,7 @@ Ext.define('CasMobile.store.CarModels', {
 
     proxy: {
         type: 'ajax',
+        limitParam: 'page_size',
         // url: CasMobile.APIs.getFullUrl(CasMobile.APIs.LIST_C) || '/json/listC', // Fallback if APIs not loaded yet, but requires should handle it
         extraParams: {
             ca_id: '0141', // Car Models Category ID

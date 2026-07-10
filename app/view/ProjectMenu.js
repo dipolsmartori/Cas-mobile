@@ -56,6 +56,7 @@ Ext.define('CasMobile.view.ProjectMenu', {
             pageSize: 10,
             proxy: {
                 url: CasMobile.APIs.getFullUrl(CasMobile.APIs.LIST_C),
+                limitParam: 'page_size',
                 extraParams: {
                     ca_id: window.siteInfo.categories.carModels,
                     o: 's',
@@ -251,7 +252,7 @@ Ext.define('CasMobile.view.ProjectMenu', {
         const pageData = rawData.page || {};
         const serverPage = parseInt(pageData.page, 10);
         const serverMaxPage = parseInt(pageData.maxPage, 10);
-        const pageSize = parseInt(pageData.pageSize, 10) || store.getPageSize() || 10;
+        const pageSize = parseInt(pageData.page_size || pageData.pageSize, 10) || store.getPageSize() || 10;
         const parsedTotalCount = parseInt(pageData.totCount, 10);
         const totalCount = isNaN(parsedTotalCount) ? store.getTotalCount() || store.getCount() : parsedTotalCount;
         const currentPage = isNaN(serverPage) ? store.currentPage || 1 : serverPage + 1;
