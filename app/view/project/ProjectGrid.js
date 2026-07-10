@@ -208,12 +208,17 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
 
     syncMeasurementEvaluationColumns: function() {
         var me = this;
+        var activeRound = parseInt(me.getMaxRound(), 10);
 
         if (me.destroyed || me.destroying) {
             return;
         }
 
         me.eachProjectColumn(function(col) {
+            if (col.round !== activeRound) {
+                return;
+            }
+
             if (col.roundGroupHeader) {
                 if (col.setText) {
                     col.setText(me.getRoundHeaderText(col.round));
