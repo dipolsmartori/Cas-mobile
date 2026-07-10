@@ -314,7 +314,14 @@ Ext.define('CasMobile.view.main.Main', {
             xtype: 'panel',
             itemId: 'statisticsTab',
             iconCls: 'x-fa fa-chart-bar',
-            html: "준비중 입니다",
+            layout: 'fit',
+            scrollable: true,
+            items: [{
+                xtype: 'component',
+                itemId: 'statisticsContent',
+                cls: 'cas-statistics-content',
+                html: '<div class="cas-statistics-empty">Select a project to view statistics.</div>'
+            }]
         }, {
             xtype: 'cas-schedule',
             itemId: 'scheduleTab',

@@ -53,6 +53,9 @@
             return false;
         }
 
+        if (toValue && toValue.getItemId() === 'statisticsTab') {
+            this.showStatistics(toValue);
+        }
     },
 
     showStartPopups: function () {
@@ -522,6 +525,315 @@
         }
         let maxRound = grid.getMaxRound();
         Ext.create('CasMobile.view.evaluate.VisualEvaluationWindow', { maxRound: maxRound }).show();
+    },
+
+    showStatistics: function (statisticsTab) {
+        const me = this;
+        const tab = statisticsTab || me.getView().down('#statisticsTab');
+        const homeTab = me.getView().down('#homeTab');
+        const grid = homeTab ? homeTab.down('projectgrid') : null;
+
+        if (!tab) return;
+
+        if (!grid) {
+            me.renderStatisticsMessage(tab, 'Select a project to view statistics.');
+            return;
+        }
+
+        tab.setMasked({ xtype: 'loadmask', message: 'Analyzing data...' });
+
+        me.loadStatisticsRecords(grid).then(function (records) {
+            const maxRound = parseInt(grid.getMaxRound ? grid.getMaxRound() : grid.maxRound, 10) || 1;
+            const stats = me.buildCurrentEvaluationStatistics(records, maxRound, me.getStatisticsBrand());
+
+            tab.setMasked(false);
+
+            if (!records || records.length === 0) {
+                me.renderStatisticsMessage(tab, 'No data to analyze.');
+                return;
+            }
+
+            me.renderStatistics(tab, stats, maxRound);
+        }).catch(function (err) {
+            console.error('Statistics failed', err);
+            tab.setMasked(false);
+            me.renderStatisticsMessage(tab, 'Failed to load statistics.');
+        });
+    },
+
+    loadStatisticsRecords: function (grid) {
+        const store = grid && grid.getStore && grid.getStore();
+        const proxy = store && store.getProxy && store.getProxy();
+        const proxyType = proxy && (proxy.type || proxy.getType && proxy.getType());
+        const me = this;
+
+        if (!store) {
+            return Promise.resolve([]);
+        }
+
+        if (me.isOffline || proxyType === 'memory') {
+            return Promise.resolve(store.getRange ? store.getRange() : []);
+        }
+
+        return new Promise(function (resolve, reject) {
+            const params = Ext.apply({
+                limit: -1,
+                page_size: 2000
+            }, proxy && proxy.getExtraParams ? proxy.getExtraParams() : (proxy && proxy.extraParams) || {});
+            const filters = store.getFilters && store.getFilters();
+
+            if (filters && filters.each) {
+                filters.each(function (filter) {
+                    if (filter.getProperty) {
+                        params[filter.getProperty()] = filter.getValue ? filter.getValue() : filter.getValue;
+                    }
+                });
+            }
+
+            Ext.Ajax.request({
+                url: proxy && (proxy.getUrl ? proxy.getUrl() : proxy.url),
+                method: 'GET',
+                params: params,
+                withCredentials: true,
+                success: function (response) {
+                    let data;
+                    let rows;
+
+                    try {
+                        data = Ext.decode(response.responseText);
+                    } catch (e) {
+                        reject(e);
+                        return;
+                    }
+
+                    rows = data && (data.binderList || data.binderListBeanList) || [];
+                    resolve(me.normalizeStatisticsRows(rows));
+                },
+                failure: reject
+            });
+        });
+    },
+
+    normalizeStatisticsRows: function (rows) {
+        return (rows || []).map(function (row) {
+            const rec = Ext.apply({}, row && row.data ? row.data : row);
+
+            if (rec.bd_data) {
+                rec.bd_data.forEach(function (item) {
+                    const code = item && item.cols_code;
+
+                    if (!code) return;
+
+                    if (code.indexOf('round') !== -1 && item.data_val) {
+                        try {
+                            const parsed = Ext.decode(item.data_val);
+                            rec[code] = Ext.isArray(parsed) ? parsed[0] : parsed;
+                        } catch (e) {
+                            rec[code] = item.data_val;
+                        }
+                    } else {
+                        rec[code] = item.data_val;
+                    }
+                });
+            }
+
+            return rec;
+        });
+    },
+
+    getStatisticsBrand: function () {
+        let brand = '';
+
+        if (typeof window !== 'undefined') {
+            brand = window.BRAND || window.brand || '';
+        }
+
+        if (!brand && typeof CasMobile !== 'undefined' && CasMobile.APIs) {
+            brand = CasMobile.APIs.BRAND || '';
+        }
+
+        return String(brand || '').toLowerCase();
+    },
+
+    getStatisticsRecordValue: function (record, fieldName) {
+        if (!record) return null;
+
+        if (record.get) {
+            return record.get(fieldName);
+        }
+
+        return record[fieldName];
+    },
+
+    getStatisticsRoundInfo: function (record, round) {
+        let roundInfo = this.getStatisticsRecordValue(record, 'round' + round);
+
+        if (!roundInfo) return null;
+
+        if (typeof roundInfo === 'string') {
+            try {
+                roundInfo = Ext.decode(roundInfo);
+            } catch (e) {
+                return null;
+            }
+        }
+
+        return Ext.isArray(roundInfo) ? roundInfo[0] : roundInfo;
+    },
+
+    normalizeEvaluationResultForBrand: function (value, brand) {
+        if (String(brand || '').toLowerCase() === 'kia' && value === 'CLOSE') {
+            return '한도';
+        }
+
+        return value || '';
+    },
+
+    getEvaluationDisplayResult: function (value, record, round, brand) {
+        const returnVal = this.normalizeEvaluationResultForBrand(value || '', brand);
+
+        if (returnVal) {
+            return returnVal;
+        }
+
+        if (record && round) {
+            for (let previousRound = round - 1; previousRound >= 1; previousRound--) {
+                const previousData = this.getStatisticsRoundInfo(record, previousRound);
+                const previousResult = this.normalizeEvaluationResultForBrand(
+                    previousData && previousData.resultVisual || '',
+                    brand
+                );
+
+                if (!previousResult || previousResult === 'NOT') continue;
+                return previousResult === 'FAIL' ? 'NOT' : '';
+            }
+        }
+
+        return 'NOT';
+    },
+
+    getEvaluationStatisticsResultKey: function (value) {
+        const result = String(value || '').toUpperCase();
+
+        if (value === '한도' || result === 'LIMITED' || result === 'CLOSE') return 'CLOSE';
+        if (result === 'PASS' || result === 'FAIL' || result === 'NOT') return result;
+
+        return '';
+    },
+
+    buildCurrentEvaluationStatistics: function (records, maxRound, brand) {
+        const stats = {};
+
+        for (let r = 1; r <= maxRound; r++) {
+            stats[r] = { PASS: 0, CLOSE: 0, FAIL: 0, NOT: 0, TOTAL: 0 };
+        }
+
+        stats.final = { PASS: 0, CLOSE: 0, FAIL: 0, NOT: 0, TOTAL: 0 };
+
+        (records || []).forEach(record => {
+            const resultValues = [];
+
+            for (let r = 1; r <= maxRound; r++) {
+                const roundInfo = this.getStatisticsRoundInfo(record, r);
+                const rawResult = roundInfo && roundInfo.resultVisual || '';
+                const result = this.getEvaluationDisplayResult(rawResult, record, r, brand);
+                const resultKey = this.getEvaluationStatisticsResultKey(result);
+
+                if (resultKey) {
+                    stats[r][resultKey]++;
+                }
+
+                stats[r].TOTAL++;
+                resultValues.push(result);
+            }
+
+            const finalResult = resultValues.filter(function (value) { return value; }).pop() || 'NOT';
+            const finalResultKey = this.getEvaluationStatisticsResultKey(finalResult) || 'NOT';
+
+            stats.final[finalResultKey]++;
+            stats.final.TOTAL++;
+        });
+
+        return stats;
+    },
+
+    renderStatisticsMessage: function (tab, message) {
+        const content = tab.down('#statisticsContent');
+
+        if (content) {
+            content.setHtml('<div class="cas-statistics-empty">' + Ext.htmlEncode(message) + '</div>');
+        }
+    },
+
+    renderStatistics: function (tab, stats, maxRound) {
+        const me = this;
+        const content = tab.down('#statisticsContent');
+        let html = '<div class="cas-statistics-wrap">';
+
+        if (!content) return;
+
+        for (let r = 1; r <= maxRound; r++) {
+            html += me.buildStatisticsCard(me.getRoundLabel(r), stats[r]);
+        }
+
+        html += me.buildStatisticsCard('Result', stats.final, true);
+        html += '</div>';
+
+        content.setHtml(html);
+    },
+
+    getRoundLabel: function (round) {
+        let suffix = 'th';
+
+        if (round === 1) suffix = 'st';
+        else if (round === 2) suffix = 'nd';
+        else if (round === 3) suffix = 'rd';
+
+        return round + suffix;
+    },
+
+    buildStatisticsCard: function (title, data, isFinal) {
+        const brand = this.getStatisticsBrand();
+        const closeLabel = brand === 'kia' ? '한도' : 'CLOSE';
+        const colors = {
+            PASS: '#92D050',
+            CLOSE: '#0070C0',
+            FAIL: '#C00000',
+            NOT: '#A6A6A6',
+            TOTAL: '#595959'
+        };
+        const total = data && data.TOTAL ? data.TOTAL : 0;
+        const denominator = total || 1;
+        const getPct = function (val) {
+            return Math.round((val / denominator) * 100) + '%';
+        };
+        const rows = ['PASS', 'CLOSE', 'FAIL', 'NOT', 'TOTAL'];
+        let chartHtml = '<div class="cas-statistics-chart">';
+
+        rows.forEach(function (key) {
+            const val = data && data[key] ? data[key] : 0;
+            const height = key === 'TOTAL' ? (total ? 100 : 1) : Math.max(1, Math.floor((val / denominator) * 100));
+            const label = key === 'CLOSE' ? closeLabel : key;
+
+            chartHtml += '<div class="cas-statistics-bar-item">' +
+                '<div class="cas-statistics-bar-value">' + val + '</div>' +
+                '<div class="cas-statistics-bar" style="height:' + height + 'px;background-color:' + colors[key] + ';"></div>' +
+                '<div class="cas-statistics-bar-label">' + Ext.htmlEncode(label) + '</div>' +
+                '</div>';
+        });
+
+        chartHtml += '</div>';
+
+        return '<div class="cas-statistics-card' + (isFinal ? ' cas-statistics-final' : '') + '">' +
+            '<div class="cas-statistics-title">' + Ext.htmlEncode(title) + '</div>' +
+            '<table class="cas-statistics-table">' +
+            '<thead><tr><th>PASS</th><th>' + Ext.htmlEncode(closeLabel) + '</th><th>FAIL</th><th>NOT</th><th>TOTAL</th></tr></thead>' +
+            '<tbody>' +
+            '<tr><td>' + data.PASS + '</td><td>' + data.CLOSE + '</td><td>' + data.FAIL + '</td><td>' + data.NOT + '</td><td>' + data.TOTAL + '</td></tr>' +
+            '<tr class="cas-statistics-percent"><td>' + getPct(data.PASS) + '</td><td>' + getPct(data.CLOSE) + '</td><td>' + getPct(data.FAIL) + '</td><td>' + getPct(data.NOT) + '</td><td>100%</td></tr>' +
+            '</tbody></table>' +
+            chartHtml +
+            '</div>';
     },
 
     onSearch: function () {
