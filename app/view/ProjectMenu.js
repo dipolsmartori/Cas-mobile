@@ -54,7 +54,7 @@ Ext.define('CasMobile.view.ProjectMenu', {
 
         var store = Ext.create('CasMobile.store.CarModels', {
             autoLoad: false,
-            pageSize: 10,
+            pageSize: 20,
             proxy: {
                 url: CasMobile.APIs.getFullUrl(CasMobile.APIs.LIST_C),
                 limitParam: 'page_size',
