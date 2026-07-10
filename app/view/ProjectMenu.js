@@ -4,6 +4,7 @@ Ext.define('CasMobile.view.ProjectMenu', {
 
     requires: [
         'Ext.dataview.DataView',
+        'Ext.grid.PagingToolbar',
         'CasMobile.store.CarModels',
         'Ext.Toast',
         'CasMobile.util.Util'
@@ -52,6 +53,7 @@ Ext.define('CasMobile.view.ProjectMenu', {
 
         var store = Ext.create('CasMobile.store.CarModels', {
             autoLoad: false,
+            pageSize: 10,
             proxy: {
                 url: CasMobile.APIs.getFullUrl(CasMobile.APIs.LIST_C),
                 extraParams: {
@@ -61,13 +63,57 @@ Ext.define('CasMobile.view.ProjectMenu', {
                 }
             },
             listeners: {
+                beforeload: function () {
+                    me.setProjectPagingLoading(true);
+                },
                 load: function (store, records, successful, operation) {
+                    me.setProjectPagingLoading(false);
                     if (!successful) {
                         console.error('Store load failed', operation);
                         Ext.toast('Failed to load projects');
                     } else {
+                        me.syncProjectPagingToolbar(store);
+                        const dataview = me.down('#projectDataView');
+                        const scroller = dataview && dataview.getScrollable();
+
+                        if (scroller) scroller.scrollTo(0, 0);
+
                         if (records.length === 0) {
                             Ext.toast('No projects found');
+                        }
+                    }
+                }
+            }
+        });
+
+        this.add({
+            xtype: 'pagingtoolbar',
+            itemId: 'projectPagingToolbar',
+            docked: 'bottom',
+            hidden: true,
+            prevButton: {
+                tooltip: 'Previous page',
+                handler: function () {
+                    me.moveProjectPage(-1);
+                }
+            },
+            nextButton: {
+                tooltip: 'Next page',
+                handler: function () {
+                    me.moveProjectPage(1);
+                }
+            },
+            summaryComponent: {
+                html: '1 / 1 (0)'
+            },
+            sliderField: {
+                liveUpdate: false,
+                minValue: 1,
+                maxValue: 1,
+                listeners: {
+                    change: function (slider, value) {
+                        if (!me.syncingProjectPagingToolbar) {
+                            me.loadProjectPage(Math.round(value));
                         }
                     }
                 }
@@ -166,9 +212,84 @@ Ext.define('CasMobile.view.ProjectMenu', {
         }
     },
 
+    setProjectPagingLoading: function (loading) {
+        const dataview = this.down('#projectDataView');
+
+        if (dataview) {
+            dataview.setMasked(loading ? { xtype: 'loadmask' } : false);
+        }
+    },
+
+    moveProjectPage: function (offset) {
+        const dataview = this.down('#projectDataView');
+        const store = dataview && dataview.getStore();
+        const currentPage = store ? store.currentPage || 1 : 1;
+
+        this.loadProjectPage(currentPage + offset);
+    },
+
+    loadProjectPage: function (page) {
+        const dataview = this.down('#projectDataView');
+        const store = dataview && dataview.getStore();
+        const totalPages = this.projectTotalPages || 1;
+
+        page = Math.max(1, Math.min(totalPages, parseInt(page, 10) || 1));
+
+        if (store && page !== store.currentPage) {
+            console.info('[ProjectMenu paging] loading page', {
+                extPage: page,
+                serverPage: page - 1
+            });
+            store.loadPage(page);
+        }
+    },
+
+    syncProjectPagingToolbar: function (store) {
+        const toolbar = this.down('#projectPagingToolbar');
+        const reader = store && store.getProxy().getReader();
+        const rawData = reader && reader.rawData || {};
+        const pageData = rawData.page || {};
+        const serverPage = parseInt(pageData.page, 10);
+        const serverMaxPage = parseInt(pageData.maxPage, 10);
+        const pageSize = parseInt(pageData.pageSize, 10) || store.getPageSize() || 10;
+        const parsedTotalCount = parseInt(pageData.totCount, 10);
+        const totalCount = isNaN(parsedTotalCount) ? store.getTotalCount() || store.getCount() : parsedTotalCount;
+        const currentPage = isNaN(serverPage) ? store.currentPage || 1 : serverPage + 1;
+        const totalPages = isNaN(serverMaxPage) ? Math.max(1, Math.ceil(totalCount / pageSize)) : serverMaxPage + 1;
+
+        if (!toolbar) return;
+
+        store.currentPage = currentPage;
+        store.totalCount = totalCount;
+        this.projectTotalPages = totalPages;
+        this.syncingProjectPagingToolbar = true;
+
+        toolbar.getPrevButton().setDisabled(currentPage <= 1);
+        toolbar.getNextButton().setDisabled(currentPage >= totalPages);
+        toolbar.getSummaryComponent().setHtml(currentPage + ' / ' + totalPages + ' (' + totalCount + ')');
+        toolbar.getSliderField().setMinValue(1);
+        toolbar.getSliderField().setMaxValue(totalPages);
+        toolbar.getSliderField().setValue(currentPage);
+        toolbar.getSliderField().setDisabled(totalPages <= 1);
+        toolbar.show();
+
+        this.syncingProjectPagingToolbar = false;
+
+        console.info('[ProjectMenu paging] synchronized', {
+            serverPage: isNaN(serverPage) ? null : serverPage,
+            currentPage: currentPage,
+            totalPages: totalPages,
+            pageSize: pageSize,
+            totalCount: totalCount
+        });
+    },
+
     loadOfflineCarModels: function () {
         var me = this;
         var dataview = me.down('#projectDataView');
+        const pagingToolbar = me.down('#projectPagingToolbar');
+
+        if (pagingToolbar) pagingToolbar.hide();
 
         var req = indexedDB.open('CasMobileCache', 3);
 

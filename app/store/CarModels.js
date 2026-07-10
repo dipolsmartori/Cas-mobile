@@ -9,6 +9,7 @@ Ext.define('CasMobile.store.CarModels', {
     ],
 
     autoLoad: true,
+    pageSize: 10,
     fields: ['bd_subject', 'bd_regdate', 'bd_idx', 'bd_file', 'code', 'bgColor', 'initials', 'country'],
 
     proxy: {
@@ -22,6 +23,7 @@ Ext.define('CasMobile.store.CarModels', {
         reader: {
             type: 'json',
             rootProperty: 'binderListBeanList',
+            totalProperty: 'page.totCount',
             transform: function (rawData) {
                 if (!rawData || !rawData.binderListBeanList) return rawData;
 
@@ -46,9 +48,10 @@ Ext.define('CasMobile.store.CarModels', {
                     };
                 }).filter(item => item !== null);
 
-                return {
-                    binderListBeanList: binderList
-                };
+                const transformedData = Ext.apply({}, rawData);
+                transformedData.binderListBeanList = binderList;
+
+                return transformedData;
             }
         }
     }
