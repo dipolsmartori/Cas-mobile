@@ -96,21 +96,25 @@ Ext.define('CasMobile.view.ProjectMenu', {
             docked: 'bottom',
             hidden: true,
             prevButton: {
+                width: 34,
                 tooltip: 'Previous page',
                 handler: function () {
                     me.moveProjectPage(-1);
                 }
             },
             nextButton: {
+                width: 34,
                 tooltip: 'Next page',
                 handler: function () {
                     me.moveProjectPage(1);
                 }
             },
             summaryComponent: {
+                width: 72,
                 html: '1 / 1 (0)'
             },
             sliderField: {
+                width: 92,
                 liveUpdate: false,
                 minValue: 1,
                 maxValue: 1,
@@ -129,13 +133,13 @@ Ext.define('CasMobile.view.ProjectMenu', {
             projectPagingToolbar.add([
                 {
                     xtype: 'spacer',
-                    width: 8
+                    width: 4
                 },
                 {
                     xtype: 'searchfield',
                     itemId: 'projectSearchField',
-                    width: 145,
-                    placeholder: 'Search car model',
+                    width: 96,
+                    placeholder: 'Search',
                     listeners: {
                         action: function (field) {
                             me.applyProjectSearch(field.getValue());
@@ -149,6 +153,7 @@ Ext.define('CasMobile.view.ProjectMenu', {
                     xtype: 'button',
                     itemId: 'projectSearchReset',
                     iconCls: 'x-fa fa-times',
+                    width: 34,
                     tooltip: 'Reset search',
                     disabled: true,
                     handler: function () {
