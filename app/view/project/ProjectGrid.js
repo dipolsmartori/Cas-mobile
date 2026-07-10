@@ -75,7 +75,7 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
             tap: function(e) {
                 me.onMeasurementEvaluationToggleTap(e);
             },
-            delegate: '.project-measure-toggle'
+            delegate: '.project-round-toggle'
         });
     },
 
@@ -97,15 +97,17 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         return width > 0 && width <= 1180;
     },
 
-    getMeasurementEvaluationHeaderText: function() {
+    getRoundHeaderText: function(roundNum) {
         var compact = this.getMeasurementEvaluationCompact();
-        var iconCls = compact ? 'fas fa-expand' : 'fas fa-compress';
+        var iconCls = compact ? 'x-fa fa-expand' : 'x-fa fa-compress';
         var title = compact ? 'Expand Measurement Evaluation' : 'Shrink Measurement Evaluation';
 
-        return 'Measurement Evaluation' +
-            '<span class="project-measure-toggle" title="' + title + '">' +
+        return '<span class="project-round-header">' +
+            '<span class="project-round-toggle" title="' + title + '">' +
                 '<i class="' + iconCls + '"></i>' +
-            '</span>';
+            '</span>' +
+            'Round ' + roundNum +
+        '</span>';
     },
 
     getCompactMeasurementColumnWidth: function(col) {
@@ -142,8 +144,8 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         if (!me.isInitialized || !me.query) return;
 
         me.query('column').forEach(function(col) {
-            if (col.measurementGroupHeader && col.setText) {
-                col.setText(me.getMeasurementEvaluationHeaderText());
+            if (col.roundGroupHeader && col.setText) {
+                col.setText(me.getRoundHeaderText(col.round));
             }
 
             if (col.measurementEvaluationColumn && col.setWidth) {
@@ -181,15 +183,15 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         for (var i = 1; i <= maxRound; i++) {
             (function(roundNum) {
                 roundColumns.push({
-                    text: 'Round ' + roundNum,
+                    text: me.getRoundHeaderText(roundNum),
                     round: roundNum,
+                    roundGroupHeader: true,
                     dataIndex: 'round' + roundNum,
                     hidden: roundNum !== maxRound,
                     columns: [
                         {
-                            text: me.getMeasurementEvaluationHeaderText(),
+                            text: 'Measurement Evaluation',
                             round: roundNum,
-                            measurementGroupHeader: true,
                             columns: measureCols.map(function(col) {
                                 var newCol = Ext.apply({}, col);
                                 newCol.round = roundNum;

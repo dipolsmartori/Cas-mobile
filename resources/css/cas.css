@@ -14,19 +14,28 @@
     padding: 2px 4px 2px;
 }
 
-.project-grid .project-measure-toggle {
+.project-grid .project-round-header {
+    display: block;
+    position: relative;
+    min-height: 22px;
+    line-height: 22px;
+    text-align: center;
+}
+
+.project-grid .project-round-toggle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    position: absolute;
+    left: 4px;
+    top: 0;
     width: 22px;
     height: 22px;
-    margin-left: 6px;
     color: #004F9F;
     cursor: pointer;
-    vertical-align: middle;
 }
 
-.project-grid .project-measure-toggle i {
+.project-grid .project-round-toggle i {
     pointer-events: none;
 }
 
