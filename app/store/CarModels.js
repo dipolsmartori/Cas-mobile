@@ -17,14 +17,13 @@ Ext.define('CasMobile.store.CarModels', {
         limitParam: 'page_size',
         // url: CasMobile.APIs.getFullUrl(CasMobile.APIs.LIST_C) || '/json/listC', // Fallback if APIs not loaded yet, but requires should handle it
         extraParams: {
-            ca_id: '0141', // Car Models Category ID
             o: 's',
             hide: 'NO'
         },
         reader: {
             type: 'json',
             rootProperty: 'binderListBeanList',
-            totalProperty: 'page.totCount',
+            totalProperty: 'totCount',
             transform: function (rawData) {
                 if (!rawData || !rawData.binderListBeanList) return rawData;
 
