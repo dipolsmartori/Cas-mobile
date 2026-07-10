@@ -177,6 +177,10 @@ Ext.define('CasMobile.view.schedule.ScheduleController', {
 
         const me = this;
 
+        this.calendarGestureElement = comp.element;
+        this.calendarGestureElement.setStyle('touch-action', 'pan-y');
+        this.calendarGestureElement.on('swipe', this.onCalendarSwipe, this);
+
         this.calendar = new FullCalendar.Calendar(comp.element.dom, {
             initialView: 'dayGridMonth',
             timeZone: 'local',
@@ -280,6 +284,44 @@ Ext.define('CasMobile.view.schedule.ScheduleController', {
                 this.calendar.updateSize();
             }
         }, 150);
+    },
+
+    onCalendarSwipe: function (event) {
+        if (!this.calendar || !event || (event.direction !== 'left' && event.direction !== 'right')) {
+            return;
+        }
+
+        const previousDate = this.calendar.getDate();
+
+        if (event.stopEvent) {
+            event.stopEvent();
+        }
+
+        if (event.direction === 'left') {
+            this.calendar.next();
+        } else {
+            this.calendar.prev();
+        }
+
+        console.info('[Schedule calendar swipe] month changed', {
+            direction: event.direction,
+            from: Ext.Date.format(previousDate, 'Y-m'),
+            to: Ext.Date.format(this.calendar.getDate(), 'Y-m')
+        });
+    },
+
+    destroy: function () {
+        if (this.calendarGestureElement) {
+            this.calendarGestureElement.un('swipe', this.onCalendarSwipe, this);
+            this.calendarGestureElement = null;
+        }
+
+        if (this.calendar) {
+            this.calendar.destroy();
+            this.calendar = null;
+        }
+
+        this.callParent(arguments);
     },
 
     onCalendarResize: function () {
