@@ -11,6 +11,10 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
     
     variableHeights: true,
 
+    listeners: {
+        childdoubletap: 'onProjectGridChildDoubleTap'
+    },
+
     config: {
         maxRound: 0,
         params: null,
@@ -375,6 +379,7 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
                             columns: visualCols.map(function(col) {
                                 var newCol = Ext.apply({}, col);
                                 newCol.round = roundNum;
+                                newCol.visualEvaluationColumn = true;
                                 newCol.cell = { encodeHtml: false };
                                 if (col.dataIndex.indexOf('Visual2') !== -1) {
                                     newCol.width = 45;

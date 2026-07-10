@@ -1,6 +1,14 @@
 Ext.define('CasMobile.view.project.ProjectGridController', {
     extend: 'Ext.app.ViewController',
     alias: 'controller.projectgrid',
+
+    requires: [
+        'Ext.Dialog',
+        'CasMobile.util.ActorUtil',
+        'CasMobile.util.Localization',
+        'CasMobile.view.evaluate.VisualEvaluationContainer'
+    ],
+
     control: {
     },
 
@@ -54,6 +62,107 @@ Ext.define('CasMobile.view.project.ProjectGridController', {
 
     init: function (grid) {
         this.callParent();
+    },
+
+    onProjectGridChildDoubleTap: function (grid, location) {
+        const record = location && location.record;
+        const column = location && location.column;
+        const event = location && location.event;
+
+        if (!record || !column || !column.visualEvaluationColumn || !column.round) {
+            return;
+        }
+
+        if (!window.Actor || !Actor.userInfo || Number(Actor.userInfo.nv_level) <= 4) {
+            return;
+        }
+
+        if (Ext.ComponentQuery.query('visualevaluationwindow').length > 0 ||
+            Ext.ComponentQuery.query('#directVisualEvaluationDialog').length > 0) {
+            return;
+        }
+
+        if (event && event.stopEvent) {
+            event.stopEvent();
+        }
+
+        this.runVisualEvaluation(record, column.round);
+    },
+
+    runVisualEvaluation: function (record, round) {
+        const L = CasMobile.util.Localization;
+        const roundField = 'round' + round;
+        let roundJson = record.get(roundField);
+
+        if (typeof roundJson === 'string') {
+            try {
+                roundJson = Ext.decode(roundJson);
+            } catch (error) {
+                console.warn('Failed to parse visual evaluation round data:', error);
+                roundJson = null;
+            }
+        }
+
+        if (Array.isArray(roundJson)) {
+            roundJson = roundJson[0];
+        }
+
+        roundJson = Ext.apply({}, roundJson || {});
+        roundJson.round = Number(roundJson.round) || Number(round);
+
+        const evaluationRecord = Ext.create('Ext.data.Model', {
+            roundJson: roundJson,
+            modelName: record.get('modelName') || record.get('model_nm') || '',
+            partName: record.get('partName2') || record.get('part_nm') || '',
+            round: Number(round),
+            files: record.get('bd_file') || [],
+            ca_id: record.get('ca_id') ||
+                (window.siteInfo && siteInfo.categories && siteInfo.categories.evaluationDataCategory),
+            bd_idx: record.get('bd_idx'),
+            mainRecord: record
+        });
+
+        let dialog = Ext.create('Ext.Dialog', {
+            itemId: 'directVisualEvaluationDialog',
+            title: L.get('visualEvaluation'),
+            closable: true,
+            closeAction: 'destroy',
+            modal: true,
+            width: '95%',
+            maxWidth: 640,
+            height: '92%',
+            maxHeight: 700,
+            layout: 'fit',
+            padding: 10,
+            items: [{
+                xtype: 'visualevaluationcontainer',
+                evaluationValues: evaluationRecord,
+                listeners: {
+                    [CasMobile.Events.SAVE_EVALUATION_RESULT]: async function (container, sourceRecord, updatedRoundJson) {
+                        container.setMasked({ xtype: 'loadmask' });
+
+                        try {
+                            await CasMobile.util.ActorUtil.updateMainData(
+                                sourceRecord.get('mainRecord') || record,
+                                updatedRoundJson,
+                                roundField
+                            );
+                            Ext.toast(L.get('upload.saved'));
+                            dialog.destroy();
+                        } catch (error) {
+                            console.error('Failed to save visual evaluation:', error);
+                            Ext.Msg.alert(L.get('main.warning'), error.message || 'Failed to save visual evaluation.');
+                        } finally {
+                            if (container && !container.destroyed) {
+                                container.setMasked(false);
+                            }
+                        }
+                    }
+                }
+            }]
+        });
+
+        dialog.show();
     },
 
     getBrand: function () {
