@@ -139,13 +139,16 @@ Ext.define('CasMobile.view.ProjectMenu', {
                     listeners: {
                         action: function (field) {
                             me.applyProjectSearch(field.getValue());
+                        },
+                        clearicontap: function () {
+                            me.resetProjectSearch();
                         }
                     }
                 },
                 {
                     xtype: 'button',
                     itemId: 'projectSearchReset',
-                    iconCls: 'x-fa fa-undo',
+                    iconCls: 'x-fa fa-times',
                     tooltip: 'Reset search',
                     disabled: true,
                     handler: function () {
