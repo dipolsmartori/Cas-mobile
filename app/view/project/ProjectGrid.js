@@ -99,12 +99,15 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
 
     getRoundHeaderText: function(roundNum) {
         var compact = this.getMeasurementEvaluationCompact();
-        var iconCls = compact ? 'x-fa fa-expand' : 'x-fa fa-compress';
+        var iconCls = compact ? 'x-fa fas fa-expand' : 'x-fa fas fa-compress';
         var title = compact ? 'Expand Measurement Evaluation' : 'Shrink Measurement Evaluation';
-        var handler = 'return CasMobile.activeTab && CasMobile.activeTab.toggleMeasurementEvaluationColumns(event);';
-        return '<span class="project-round-header">' +
-            '<span class="project-round-toggle" title="' + title + '" onclick="' + handler + '">' +
-                '<i class="' + iconCls + '"></i>' +
+        var handler = 'var grid=Ext.getCmp(&quot;' + this.getId() + '&quot;); return grid && grid.toggleMeasurementEvaluationColumns(event);';
+        var headerStyle = 'display:block;position:relative;width:100%;min-height:22px;line-height:22px;text-align:center;box-sizing:border-box;padding:0 28px;';
+        var toggleStyle = 'position:absolute;left:0;top:0;display:inline-flex;align-items:center;justify-content:center;width:24px;height:22px;color:#004F9F;cursor:pointer;';
+
+        return '<span class="project-round-header" style="' + headerStyle + '">' +
+            '<span class="project-round-toggle" style="' + toggleStyle + '" title="' + title + '" onclick="' + handler + '">' +
+                '<i class="' + iconCls + '" style="font-size:14px;line-height:22px;"></i>' +
             '</span>' +
             '<span class="project-round-title">Round ' + roundNum + '</span>' +
         '</span>';
@@ -159,9 +162,15 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
             }
 
             if (col.measurementEvaluationColumn && col.setWidth) {
-                col.setWidth(me.getMeasurementEvaluationCompact() ? col.compactWidth : col.expandedWidth);
+                var targetWidth = me.getMeasurementEvaluationCompact() ? col.compactWidth : col.expandedWidth;
+                col.width = targetWidth;
+                col.setWidth(targetWidth);
             }
         });
+
+        if (me.refresh) {
+            me.refresh();
+        }
     },
 
     buildColumns: function(maxRound) {
