@@ -64,21 +64,87 @@ Ext.define('CasMobile.view.project.ProjectGridController', {
         this.callParent();
     },
 
-    onProjectGridChildDoubleTap: function (grid, location) {
+    getVisualEvaluationColumnDataIndex: function (column) {
+        return column && column.getDataIndex ? column.getDataIndex() : column && column.dataIndex;
+    },
+
+    isVisualEvaluationColumn: function (column) {
+        const dataIndex = this.getVisualEvaluationColumnDataIndex(column);
+
+        return !!(column && (column.visualEvaluationColumn || [
+            'dlVisual2',
+            'daVisual2',
+            'dbVisual2',
+            'remarksVisual',
+            'resultVisual'
+        ].indexOf(dataIndex) !== -1));
+    },
+
+    onProjectGridChildTap: function (grid, location) {
+        const record = location && location.record;
+        const column = location && location.column;
+
+        if (!record || !this.isVisualEvaluationColumn(column)) {
+            return;
+        }
+
+        const now = Date.now();
+        const dataIndex = this.getVisualEvaluationColumnDataIndex(column);
+        const recordId = record.getId ? record.getId() : record.get('bd_idx');
+        const tapKey = [recordId, column.round, dataIndex].join('|');
+        const previousTap = this.lastVisualEvaluationTap;
+        const isSecondTap = !!(previousTap && previousTap.key === tapKey && now - previousTap.time <= 600);
+
+        console.info('[ProjectGrid visual evaluation] visual cell tap', {
+            bd_idx: record.get('bd_idx'),
+            round: column.round,
+            dataIndex: dataIndex,
+            userLevel: window.Actor && Actor.userInfo && Actor.userInfo.nv_level,
+            isSecondTap: isSecondTap
+        });
+
+        this.lastVisualEvaluationTap = isSecondTap ? null : { key: tapKey, time: now };
+
+        if (isSecondTap) {
+            console.info('[ProjectGrid visual evaluation] two-tap fallback accepted');
+            this.onProjectGridChildDoubleTap(grid, location, 'childtap-fallback');
+        }
+    },
+
+    onProjectGridChildDoubleTap: function (grid, location, trigger) {
         const record = location && location.record;
         const column = location && location.column;
         const event = location && location.event;
+        const dataIndex = this.getVisualEvaluationColumnDataIndex(column);
+        const isVisualColumn = this.isVisualEvaluationColumn(column);
 
-        if (!record || !column || !column.visualEvaluationColumn || !column.round) {
+        console.info('[ProjectGrid visual evaluation] open requested', {
+            trigger: trigger || 'childdoubletap',
+            bd_idx: record && record.get('bd_idx'),
+            round: column && column.round,
+            dataIndex: dataIndex,
+            isVisualColumn: isVisualColumn,
+            userLevel: window.Actor && Actor.userInfo && Actor.userInfo.nv_level
+        });
+
+        if (!record || !column || !isVisualColumn || !column.round) {
+            console.warn('[ProjectGrid visual evaluation] ignored: record, visual column, or round is missing');
             return;
         }
 
         if (!window.Actor || !Actor.userInfo || Number(Actor.userInfo.nv_level) <= 4) {
+            console.warn('[ProjectGrid visual evaluation] ignored: admin access is required');
             return;
         }
 
-        if (Ext.ComponentQuery.query('visualevaluationwindow').length > 0 ||
-            Ext.ComponentQuery.query('#directVisualEvaluationDialog').length > 0) {
+        const batchWindows = Ext.ComponentQuery.query('visualevaluationwindow');
+        const directDialogs = Ext.ComponentQuery.query('#directVisualEvaluationDialog');
+
+        if (batchWindows.length > 0 || directDialogs.length > 0) {
+            console.warn('[ProjectGrid visual evaluation] ignored: an evaluation dialog is already open', {
+                batchWindowCount: batchWindows.length,
+                directDialogCount: directDialogs.length
+            });
             return;
         }
 
@@ -94,11 +160,17 @@ Ext.define('CasMobile.view.project.ProjectGridController', {
         const roundField = 'round' + round;
         let roundJson = record.get(roundField);
 
+        console.info('[ProjectGrid visual evaluation] preparing dialog', {
+            bd_idx: record.get('bd_idx'),
+            round: round,
+            roundValueType: Array.isArray(roundJson) ? 'array' : typeof roundJson
+        });
+
         if (typeof roundJson === 'string') {
             try {
                 roundJson = Ext.decode(roundJson);
             } catch (error) {
-                console.warn('Failed to parse visual evaluation round data:', error);
+                console.warn('[ProjectGrid visual evaluation] failed to parse round data', error);
                 roundJson = null;
             }
         }
@@ -139,6 +211,10 @@ Ext.define('CasMobile.view.project.ProjectGridController', {
                 evaluationValues: evaluationRecord,
                 listeners: {
                     [CasMobile.Events.SAVE_EVALUATION_RESULT]: async function (container, sourceRecord, updatedRoundJson) {
+                        console.info('[ProjectGrid visual evaluation] save requested', {
+                            bd_idx: record.get('bd_idx'),
+                            round: round
+                        });
                         container.setMasked({ xtype: 'loadmask' });
 
                         try {
@@ -147,10 +223,11 @@ Ext.define('CasMobile.view.project.ProjectGridController', {
                                 updatedRoundJson,
                                 roundField
                             );
+                            console.info('[ProjectGrid visual evaluation] save completed');
                             Ext.toast(L.get('upload.saved'));
                             dialog.destroy();
                         } catch (error) {
-                            console.error('Failed to save visual evaluation:', error);
+                            console.error('[ProjectGrid visual evaluation] save failed', error);
                             Ext.Msg.alert(L.get('main.warning'), error.message || 'Failed to save visual evaluation.');
                         } finally {
                             if (container && !container.destroyed) {
@@ -163,6 +240,7 @@ Ext.define('CasMobile.view.project.ProjectGridController', {
         });
 
         dialog.show();
+        console.info('[ProjectGrid visual evaluation] dialog shown');
     },
 
     getBrand: function () {

@@ -12,6 +12,7 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
     variableHeights: true,
 
     listeners: {
+        childtap: 'onProjectGridChildTap',
         childdoubletap: 'onProjectGridChildDoubleTap'
     },
 

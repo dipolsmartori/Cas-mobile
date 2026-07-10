@@ -192,6 +192,12 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationContainer', {
 
         const btnReset = me.down('#btnResetResult');
         if (btnReset) btnReset.setText(L.get('main.reset'));
+
+        if (me.pendingEvaluationValues) {
+            const pendingEvaluationValues = me.pendingEvaluationValues;
+            me.pendingEvaluationValues = null;
+            me.updateEvaluationValues(pendingEvaluationValues);
+        }
     },
 
     _buildVisualItems: function (manufacturer) {
@@ -317,9 +323,22 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationContainer', {
         }
     },
 
-    setEvaluationValues: function (record) {
+    updateEvaluationValues: function (record) {
+        if (!record) return;
+
         const roundJson = record.get('roundJson');
         const form = this.down('formpanel');
+
+        if (!form) {
+            this.pendingEvaluationValues = record;
+            console.info('[VisualEvaluationContainer] evaluation values deferred until initialization');
+            return;
+        }
+
+        console.info('[VisualEvaluationContainer] applying evaluation values', {
+            bd_idx: record.get('bd_idx'),
+            round: record.get('round')
+        });
         form.setRecord(record);
         // Title 생성
         let roundInfo = `<div style="font-weight: bold; font-size: 16px;">${record.get('modelName')} / ${record.get('partName')} / R${record.get('round')}</div>`;
