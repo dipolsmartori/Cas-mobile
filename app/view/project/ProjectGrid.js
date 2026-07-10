@@ -14,7 +14,7 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
     config: {
         maxRound: 0,
         params: null,
-        measurementEvaluationHidden: false
+        measurementEvaluationHiddenByRound: null
     },
 
     store: {
@@ -89,7 +89,39 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         return 'Round ' + roundNum;
     },
 
-    onMeasurementEvaluationToggleTap: function(e) {
+    normalizeRound: function(round) {
+        round = parseInt(round, 10);
+
+        if (isNaN(round)) {
+            round = parseInt(this.getMaxRound(), 10);
+        }
+
+        return round;
+    },
+
+    getMeasurementEvaluationHiddenForRound: function(round) {
+        var hiddenByRound = this.getMeasurementEvaluationHiddenByRound() || {};
+
+        round = this.normalizeRound(round);
+
+        return !!hiddenByRound[round];
+    },
+
+    setMeasurementEvaluationHiddenForRound: function(round, hidden) {
+        var hiddenByRound = Ext.apply({}, this.getMeasurementEvaluationHiddenByRound() || {});
+
+        round = this.normalizeRound(round);
+
+        if (hidden) {
+            hiddenByRound[round] = true;
+        } else {
+            delete hiddenByRound[round];
+        }
+
+        this.setMeasurementEvaluationHiddenByRound(hiddenByRound);
+    },
+
+    onMeasurementEvaluationToggleTap: function(e, round) {
         var browserEvent = e && (e.browserEvent || e.event || e);
 
         if (browserEvent && this.lastMeasurementToggleEvent === browserEvent) {
@@ -102,7 +134,7 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
             e.stopEvent();
         }
 
-        this.toggleMeasurementEvaluationColumns();
+        this.toggleMeasurementEvaluationColumns(e, round);
     },
 
     isRoundToggleTap: function(column, e) {
@@ -132,25 +164,64 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
     },
 
     onRoundToggleColumnTap: function(e, target) {
+        var column;
+
         if (this.isRoundToggleElementTap(target, e)) {
-            this.onMeasurementEvaluationToggleTap(e);
+            column = this.getRoundColumnFromEvent(e);
+            this.onMeasurementEvaluationToggleTap(e, column && column.round);
         }
     },
 
-    toggleMeasurementEvaluationColumns: function(e) {
+    getRoundColumnFromEvent: function(e) {
+        var point = e && e.getPoint ? e.getPoint() : null;
+        var found = null;
+
+        if (!point) {
+            return null;
+        }
+
+        this.eachProjectColumn(function(col) {
+            var headerRegion;
+
+            if (found || !col.roundGroupHeader || !col.headerElement) {
+                return;
+            }
+
+            headerRegion = col.headerElement.getRegion();
+
+            if (headerRegion &&
+                point.x >= headerRegion.left &&
+                point.x <= headerRegion.right &&
+                point.y >= headerRegion.top &&
+                point.y <= headerRegion.bottom) {
+                found = col;
+            }
+        });
+
+        return found;
+    },
+
+    toggleMeasurementEvaluationColumns: function(e, round) {
+        var targetRound;
+        var hidden;
+
+        if (typeof e === 'number' || typeof e === 'string') {
+            round = e;
+            e = null;
+        }
+
         if (e) {
             if (e.stopPropagation) e.stopPropagation();
             if (e.preventDefault) e.preventDefault();
             if (e.stopEvent) e.stopEvent();
         }
 
-        this.setMeasurementEvaluationHidden(!this.getMeasurementEvaluationHidden());
-        this.syncMeasurementEvaluationColumns();
-        return false;
-    },
+        targetRound = this.normalizeRound(round);
+        hidden = !this.getMeasurementEvaluationHiddenForRound(targetRound);
 
-    updateMeasurementEvaluationHidden: function() {
-        this.syncMeasurementEvaluationColumns();
+        this.setMeasurementEvaluationHiddenForRound(targetRound, hidden);
+        this.syncMeasurementEvaluationColumns(targetRound);
+        return false;
     },
 
     eachProjectColumn: function(fn) {
@@ -206,16 +277,17 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         }
     },
 
-    syncMeasurementEvaluationColumns: function() {
+    syncMeasurementEvaluationColumns: function(round) {
         var me = this;
-        var activeRound = parseInt(me.getMaxRound(), 10);
+        var targetRound = me.normalizeRound(round);
+        var hidden = me.getMeasurementEvaluationHiddenForRound(targetRound);
 
         if (me.destroyed || me.destroying) {
             return;
         }
 
         me.eachProjectColumn(function(col) {
-            if (col.round !== activeRound) {
+            if (col.round !== targetRound) {
                 return;
             }
 
@@ -225,14 +297,14 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
                 }
 
                 if (col.toggleCls) {
-                    col.toggleCls('project-round-measure-hidden', me.getMeasurementEvaluationHidden());
+                    col.toggleCls('project-round-measure-hidden', hidden);
                 } else if (col.addCls && col.removeCls) {
-                    col[me.getMeasurementEvaluationHidden() ? 'addCls' : 'removeCls']('project-round-measure-hidden');
+                    col[hidden ? 'addCls' : 'removeCls']('project-round-measure-hidden');
                 }
             }
 
             if (col.measurementEvaluationGroup && col.setHidden) {
-                col.setHidden(me.getMeasurementEvaluationHidden());
+                col.setHidden(hidden);
             }
         });
 
@@ -273,13 +345,13 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
                     text: me.getRoundHeaderText(roundNum),
                     round: roundNum,
                     roundGroupHeader: true,
-                    cls: 'project-round-toggle-column' + (me.getMeasurementEvaluationHidden() ? ' project-round-measure-hidden' : ''),
+                    cls: 'project-round-toggle-column' + (me.getMeasurementEvaluationHiddenForRound(roundNum) ? ' project-round-measure-hidden' : ''),
                     dataIndex: 'round' + roundNum,
                     hidden: roundNum !== maxRound,
                     listeners: {
                         tap: function(column, e) {
                             if (me.isRoundToggleTap(column, e)) {
-                                me.onMeasurementEvaluationToggleTap(e);
+                                me.onMeasurementEvaluationToggleTap(e, column.round);
                             }
                         }
                     },
@@ -288,7 +360,7 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
                             text: 'Measurement Evaluation',
                             round: roundNum,
                             measurementEvaluationGroup: true,
-                            hidden: me.getMeasurementEvaluationHidden(),
+                            hidden: me.getMeasurementEvaluationHiddenForRound(roundNum),
                             columns: measureCols.map(function(col) {
                                 var newCol = Ext.apply({}, col);
                                 newCol.round = roundNum;

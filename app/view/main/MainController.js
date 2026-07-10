@@ -351,7 +351,11 @@
             grid.query('column').forEach(function (col) {
                 const colRound = col.round;
                 if (colRound) {
-                    col.setHidden(colRound !== r);
+                    const hideMeasurement = col.measurementEvaluationGroup &&
+                        grid.getMeasurementEvaluationHiddenForRound &&
+                        grid.getMeasurementEvaluationHiddenForRound(colRound);
+
+                    col.setHidden(colRound !== r || hideMeasurement);
                 }
             });
 
