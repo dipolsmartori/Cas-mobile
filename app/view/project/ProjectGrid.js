@@ -14,7 +14,7 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
     config: {
         maxRound: 0,
         params: null,
-        measurementEvaluationCompact: false
+        measurementEvaluationHidden: false
     },
 
     store: {
@@ -68,7 +68,6 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         Ext.grid.Grid.prototype.initialize.apply(this, arguments);
         
         CasMobile.activeTab = this;
-        me.setMeasurementEvaluationCompact(me.shouldCompactMeasurementEvaluation());
         me.buildColumns(me.getMaxRound());
 
         me.element.on({
@@ -86,44 +85,14 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         }
     },
 
-    shouldCompactMeasurementEvaluation: function() {
-        var viewport = Ext.Viewport;
-        var width = viewport && viewport.getWidth ? viewport.getWidth() : 0;
-
-        if (!width && typeof window !== 'undefined') {
-            width = window.innerWidth;
-        }
-
-        return width > 0 && width <= 1180;
-    },
-
     getRoundHeaderText: function(roundNum) {
         return 'Round ' + roundNum;
-    },
-
-    getCompactMeasurementColumnWidth: function(col) {
-        var compactWidths = {
-            gross: 52,
-            iiiObs: 56,
-            dl: 42,
-            da: 42,
-            db: 42,
-            de: 42,
-            mi: 42
-        };
-
-        return compactWidths[col.dataIndex] || col.width;
-    },
-
-    getMeasurementColumnWidth: function(col) {
-        return this.getMeasurementEvaluationCompact() ? this.getCompactMeasurementColumnWidth(col) : col.width;
     },
 
     onMeasurementEvaluationToggleTap: function(e) {
         var browserEvent = e && (e.browserEvent || e.event || e);
 
         if (browserEvent && this.lastMeasurementToggleEvent === browserEvent) {
-            this.logMeasurementToggle('duplicate tap ignored');
             return;
         }
 
@@ -133,7 +102,6 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
             e.stopEvent();
         }
 
-        this.logMeasurementToggle('toggle tap accepted');
         this.toggleMeasurementEvaluationColumns();
     },
 
@@ -145,18 +113,6 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
             point.x <= headerRegion.left + 36 &&
             point.y >= headerRegion.top &&
             point.y <= headerRegion.bottom);
-
-        this.logMeasurementToggle('column tap hit test', {
-            round: column && column.round,
-            point: point ? { x: point.x, y: point.y } : null,
-            headerRegion: headerRegion ? {
-                left: headerRegion.left,
-                right: headerRegion.right,
-                top: headerRegion.top,
-                bottom: headerRegion.bottom
-            } : null,
-            isToggleTap: isToggleTap
-        });
 
         return isToggleTap;
     },
@@ -172,24 +128,10 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
             y >= box.top &&
             y <= box.bottom);
 
-        this.logMeasurementToggle('delegated tap hit test', {
-            point: x !== null ? { x: x, y: y } : null,
-            elementBox: box ? {
-                left: box.left,
-                right: box.right,
-                top: box.top,
-                bottom: box.bottom,
-                width: box.width
-            } : null,
-            isToggleTap: isToggleTap
-        });
-
         return isToggleTap;
     },
 
     onRoundToggleColumnTap: function(e, target) {
-        this.logMeasurementToggle('delegated round column tap received');
-
         if (this.isRoundToggleElementTap(target, e)) {
             this.onMeasurementEvaluationToggleTap(e);
         }
@@ -202,18 +144,12 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
             if (e.stopEvent) e.stopEvent();
         }
 
-        this.logMeasurementToggle('toggle requested', {
-            beforeCompact: this.getMeasurementEvaluationCompact()
-        });
-        this.setMeasurementEvaluationCompact(!this.getMeasurementEvaluationCompact());
+        this.setMeasurementEvaluationHidden(!this.getMeasurementEvaluationHidden());
         this.syncMeasurementEvaluationColumns();
-        this.logMeasurementToggle('toggle completed', {
-            afterCompact: this.getMeasurementEvaluationCompact()
-        });
         return false;
     },
 
-    updateMeasurementEvaluationCompact: function() {
+    updateMeasurementEvaluationHidden: function() {
         this.syncMeasurementEvaluationColumns();
     },
 
@@ -221,7 +157,25 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         var me = this;
         var headerCt = me.getHeaderContainer && me.getHeaderContainer();
         var seen = {};
-        var count = 0;
+        var visitItems = function(items) {
+            if (!items) return;
+
+            if (items.items) {
+                items = items.items;
+            }
+
+            Ext.Array.each(items, function(item) {
+                visit(item);
+
+                if (item.items) {
+                    visitItems(item.items);
+                }
+
+                if (item.innerItems) {
+                    visitItems(item.innerItems);
+                }
+            });
+        };
         var visit = function(col) {
             var id;
 
@@ -231,12 +185,15 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
             if (id && seen[id]) return;
             if (id) seen[id] = true;
 
-            count++;
             fn(col);
         };
 
         if (headerCt && headerCt.visitPreOrder) {
             headerCt.visitPreOrder('gridcolumn', visit);
+        }
+
+        if (headerCt && headerCt.items) {
+            visitItems(headerCt.items);
         }
 
         if (headerCt && headerCt.getColumns) {
@@ -247,15 +204,12 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
             Ext.Array.each(me.query('gridcolumn'), visit);
             Ext.Array.each(me.query('column'), visit);
         }
-
-        me.logMeasurementToggle('columns scanned', { count: count });
     },
 
     syncMeasurementEvaluationColumns: function() {
         var me = this;
 
         if (me.destroyed || me.destroying) {
-            me.logMeasurementToggle('sync skipped because grid is destroyed');
             return;
         }
 
@@ -266,35 +220,19 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
                 }
 
                 if (col.toggleCls) {
-                    col.toggleCls('project-round-compact', me.getMeasurementEvaluationCompact());
+                    col.toggleCls('project-round-measure-hidden', me.getMeasurementEvaluationHidden());
                 } else if (col.addCls && col.removeCls) {
-                    col[me.getMeasurementEvaluationCompact() ? 'addCls' : 'removeCls']('project-round-compact');
+                    col[me.getMeasurementEvaluationHidden() ? 'addCls' : 'removeCls']('project-round-measure-hidden');
                 }
             }
 
-            if (col.measurementEvaluationColumn && col.setWidth) {
-                var targetWidth = me.getMeasurementEvaluationCompact() ? col.compactWidth : col.expandedWidth;
-                var beforeWidth = col.getWidth ? col.getWidth() : col.width;
-                col.width = targetWidth;
-                col.setWidth(targetWidth);
-                me.logMeasurementToggle('measurement column width set', {
-                    dataIndex: col.dataIndex,
-                    round: col.round,
-                    beforeWidth: beforeWidth,
-                    targetWidth: targetWidth,
-                    afterWidth: col.getWidth ? col.getWidth() : col.width
-                });
+            if (col.measurementEvaluationGroup && col.setHidden) {
+                col.setHidden(me.getMeasurementEvaluationHidden());
             }
         });
 
         if (me.refresh) {
             me.refresh();
-        }
-    },
-
-    logMeasurementToggle: function(message, data) {
-        if (typeof console !== 'undefined' && console.log) {
-            console.log('[ProjectGrid measurement toggle] ' + message, data || '');
         }
     },
 
@@ -330,7 +268,7 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
                     text: me.getRoundHeaderText(roundNum),
                     round: roundNum,
                     roundGroupHeader: true,
-                    cls: 'project-round-toggle-column' + (me.getMeasurementEvaluationCompact() ? ' project-round-compact' : ''),
+                    cls: 'project-round-toggle-column' + (me.getMeasurementEvaluationHidden() ? ' project-round-measure-hidden' : ''),
                     dataIndex: 'round' + roundNum,
                     hidden: roundNum !== maxRound,
                     listeners: {
@@ -344,13 +282,12 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
                         {
                             text: 'Measurement Evaluation',
                             round: roundNum,
+                            measurementEvaluationGroup: true,
+                            hidden: me.getMeasurementEvaluationHidden(),
                             columns: measureCols.map(function(col) {
                                 var newCol = Ext.apply({}, col);
                                 newCol.round = roundNum;
                                 newCol.measurementEvaluationColumn = true;
-                                newCol.expandedWidth = col.width;
-                                newCol.compactWidth = me.getCompactMeasurementColumnWidth(col);
-                                newCol.width = me.getMeasurementColumnWidth(col);
                                 newCol.cell = { encodeHtml: false };
                                 return newCol;
                             })

@@ -19,7 +19,7 @@
 }
 
 .project-grid .project-round-toggle-column::before {
-    content: "\f066";
+    content: "\f070";
     position: absolute;
     left: 8px;
     top: 2px;
@@ -35,8 +35,8 @@
     text-align: center;
 }
 
-.project-grid .project-round-toggle-column.project-round-compact::before {
-    content: "\f065";
+.project-grid .project-round-toggle-column.project-round-measure-hidden::before {
+    content: "\f06e";
 }
 
 .x-group-sub-header .x-column-header-inner {
