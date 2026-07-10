@@ -4,6 +4,7 @@ Ext.define('CasMobile.view.ProjectMenu', {
 
     requires: [
         'Ext.dataview.DataView',
+        'Ext.field.Search',
         'Ext.grid.PagingToolbar',
         'CasMobile.store.CarModels',
         'Ext.Toast',
@@ -87,6 +88,8 @@ Ext.define('CasMobile.view.ProjectMenu', {
             }
         });
 
+        this.projectOriginalParams = Ext.apply({}, store.getProxy().getExtraParams());
+
         this.add({
             xtype: 'pagingtoolbar',
             itemId: 'projectPagingToolbar',
@@ -120,6 +123,37 @@ Ext.define('CasMobile.view.ProjectMenu', {
                 }
             }
         });
+
+        const projectPagingToolbar = this.down('#projectPagingToolbar');
+        if (projectPagingToolbar) {
+            projectPagingToolbar.add([
+                {
+                    xtype: 'spacer',
+                    width: 8
+                },
+                {
+                    xtype: 'searchfield',
+                    itemId: 'projectSearchField',
+                    width: 145,
+                    placeholder: 'Search car model',
+                    listeners: {
+                        action: function (field) {
+                            me.applyProjectSearch(field.getValue());
+                        }
+                    }
+                },
+                {
+                    xtype: 'button',
+                    itemId: 'projectSearchReset',
+                    iconCls: 'x-fa fa-undo',
+                    tooltip: 'Reset search',
+                    disabled: true,
+                    handler: function () {
+                        me.resetProjectSearch();
+                    }
+                }
+            ]);
+        }
 
         this.add({
             xtype: 'dataview',
@@ -245,6 +279,57 @@ Ext.define('CasMobile.view.ProjectMenu', {
         }
     },
 
+    getProjectSearchParams: function (searchValue) {
+        const params = Ext.apply({}, this.projectOriginalParams || {});
+        const pagingParams = ['page', 'page_size', 'start', 'limit', 'se_subject'];
+        const value = String(searchValue || '').trim();
+
+        pagingParams.forEach(function (key) {
+            delete params[key];
+        });
+
+        if (value) {
+            params.se_subject = value;
+        }
+
+        return params;
+    },
+
+    applyProjectSearch: function (searchValue) {
+        const dataview = this.down('#projectDataView');
+        const store = dataview && dataview.getStore();
+        const value = String(searchValue || '').trim();
+        const resetButton = this.down('#projectSearchReset');
+
+        if (!store) return;
+
+        store.getProxy().setExtraParams(this.getProjectSearchParams(value));
+        this.projectSearchValue = value;
+        this.projectTotalPages = 1;
+
+        if (resetButton) {
+            resetButton.setDisabled(!value);
+        }
+
+        console.info('[ProjectMenu paging] applying search', {
+            se_subject: value,
+            page: 0
+        });
+
+        store.currentPage = 1;
+        store.loadPage(1);
+    },
+
+    resetProjectSearch: function () {
+        const searchField = this.down('#projectSearchField');
+
+        if (searchField) {
+            searchField.setValue('');
+        }
+
+        this.applyProjectSearch('');
+    },
+
     syncProjectPagingToolbar: function (store) {
         const toolbar = this.down('#projectPagingToolbar');
         const reader = store && store.getProxy().getReader();
@@ -272,6 +357,8 @@ Ext.define('CasMobile.view.ProjectMenu', {
         toolbar.getSliderField().setMaxValue(totalPages);
         toolbar.getSliderField().setValue(currentPage);
         toolbar.getSliderField().setDisabled(totalPages <= 1);
+        const resetButton = this.down('#projectSearchReset');
+        if (resetButton) resetButton.setDisabled(!this.projectSearchValue);
         toolbar.show();
 
         this.syncingProjectPagingToolbar = false;
