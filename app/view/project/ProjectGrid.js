@@ -101,12 +101,12 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         var compact = this.getMeasurementEvaluationCompact();
         var iconCls = compact ? 'x-fa fa-expand' : 'x-fa fa-compress';
         var title = compact ? 'Expand Measurement Evaluation' : 'Shrink Measurement Evaluation';
-
+        var handler = 'return CasMobile.activeTab && CasMobile.activeTab.toggleMeasurementEvaluationColumns(event);';
         return '<span class="project-round-header">' +
-            '<span class="project-round-toggle" title="' + title + '">' +
+            '<span class="project-round-toggle" title="' + title + '" onclick="' + handler + '">' +
                 '<i class="' + iconCls + '"></i>' +
             '</span>' +
-            'Round ' + roundNum +
+            '<span class="project-round-title">Round ' + roundNum + '</span>' +
         '</span>';
     },
 
@@ -130,8 +130,19 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
 
     onMeasurementEvaluationToggleTap: function(e) {
         e.stopEvent();
+        this.toggleMeasurementEvaluationColumns();
+    },
+
+    toggleMeasurementEvaluationColumns: function(e) {
+        if (e) {
+            if (e.stopPropagation) e.stopPropagation();
+            if (e.preventDefault) e.preventDefault();
+            if (e.stopEvent) e.stopEvent();
+        }
+
         this.setMeasurementEvaluationCompact(!this.getMeasurementEvaluationCompact());
         this.syncMeasurementEvaluationColumns();
+        return false;
     },
 
     updateMeasurementEvaluationCompact: function() {
@@ -140,7 +151,6 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
 
     syncMeasurementEvaluationColumns: function() {
         var me = this;
-
         if (!me.isInitialized || !me.query) return;
 
         me.query('column').forEach(function(col) {
@@ -188,6 +198,14 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
                     roundGroupHeader: true,
                     dataIndex: 'round' + roundNum,
                     hidden: roundNum !== maxRound,
+                    listeners: {
+                        tap: function(column, e) {
+                            var target = e && e.getTarget ? e.getTarget('.project-round-toggle') : null;
+                            if (target) {
+                                me.onMeasurementEvaluationToggleTap(e);
+                            }
+                        }
+                    },
                     columns: [
                         {
                             text: 'Measurement Evaluation',

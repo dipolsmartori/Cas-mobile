@@ -14,25 +14,33 @@
     padding: 2px 4px 2px;
 }
 
+.project-grid .x-gridcolumn-title-wrap-el,
+.project-grid .x-gridcolumn-title-el {
+    width: 100%;
+}
+
 .project-grid .project-round-header {
-    display: block;
-    position: relative;
+    display: grid;
+    grid-template-columns: 28px 1fr 28px;
+    align-items: center;
+    width: 100%;
     min-height: 22px;
     line-height: 22px;
-    text-align: center;
 }
 
 .project-grid .project-round-toggle {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    position: absolute;
-    left: 4px;
-    top: 0;
     width: 22px;
     height: 22px;
     color: #004F9F;
     cursor: pointer;
+}
+
+.project-grid .project-round-title {
+    grid-column: 2;
+    text-align: center;
 }
 
 .project-grid .project-round-toggle i {
