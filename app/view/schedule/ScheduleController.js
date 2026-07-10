@@ -292,22 +292,37 @@ Ext.define('CasMobile.view.schedule.ScheduleController', {
         }
 
         const previousDate = this.calendar.getDate();
+        const monthOffset = event.direction === 'left' ? 1 : -1;
+        const targetDate = new Date(previousDate.getFullYear(), previousDate.getMonth() + monthOffset, 1);
+        const direction = event.direction;
+        const me = this;
 
-        if (event.stopEvent) {
-            event.stopEvent();
-        }
-
-        if (event.direction === 'left') {
-            this.calendar.next();
-        } else {
-            this.calendar.prev();
-        }
-
-        console.info('[Schedule calendar swipe] month changed', {
-            direction: event.direction,
+        console.info('[Schedule calendar swipe] navigation requested', {
+            direction: direction,
             from: Ext.Date.format(previousDate, 'Y-m'),
-            to: Ext.Date.format(this.calendar.getDate(), 'Y-m')
+            to: Ext.Date.format(targetDate, 'Y-m')
         });
+
+        Ext.defer(function () {
+            if (!me.calendar) return;
+
+            me.calendar.gotoDate(targetDate);
+            me.calendar.render();
+            me.calendar.updateSize();
+
+            Ext.defer(function () {
+                if (!me.calendar) return;
+
+                const calendarDom = me.calendarGestureElement && me.calendarGestureElement.dom;
+                const titleElement = calendarDom && calendarDom.querySelector('.fc-toolbar-title');
+
+                console.info('[Schedule calendar swipe] render completed', {
+                    direction: direction,
+                    currentMonth: Ext.Date.format(me.calendar.getDate(), 'Y-m'),
+                    toolbarTitle: titleElement ? titleElement.textContent.trim() : ''
+                });
+            }, 50);
+        }, 0);
     },
 
     destroy: function () {
