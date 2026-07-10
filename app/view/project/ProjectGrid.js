@@ -13,7 +13,8 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
 
     config: {
         maxRound: 0,
-        params: null
+        params: null,
+        measurementEvaluationCompact: false
     },
 
     store: {
@@ -67,7 +68,15 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         Ext.grid.Grid.prototype.initialize.apply(this, arguments);
         
         CasMobile.activeTab = this;
+        me.setMeasurementEvaluationCompact(me.shouldCompactMeasurementEvaluation());
         me.buildColumns(me.getMaxRound());
+
+        me.element.on({
+            tap: function(e) {
+                me.onMeasurementEvaluationToggleTap(e);
+            },
+            delegate: '.project-measure-toggle'
+        });
     },
 
     // Handle updates when maxRound changes (e.g. after sync or project selection)
@@ -75,6 +84,72 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         if (this.isInitialized) {
             this.buildColumns(maxRound);
         }
+    },
+
+    shouldCompactMeasurementEvaluation: function() {
+        var viewport = Ext.Viewport;
+        var width = viewport && viewport.getWidth ? viewport.getWidth() : 0;
+
+        if (!width && typeof window !== 'undefined') {
+            width = window.innerWidth;
+        }
+
+        return width > 0 && width <= 1180;
+    },
+
+    getMeasurementEvaluationHeaderText: function() {
+        var compact = this.getMeasurementEvaluationCompact();
+        var iconCls = compact ? 'fas fa-expand' : 'fas fa-compress';
+        var title = compact ? 'Expand Measurement Evaluation' : 'Shrink Measurement Evaluation';
+
+        return 'Measurement Evaluation' +
+            '<span class="project-measure-toggle" title="' + title + '">' +
+                '<i class="' + iconCls + '"></i>' +
+            '</span>';
+    },
+
+    getCompactMeasurementColumnWidth: function(col) {
+        var compactWidths = {
+            gross: 52,
+            iiiObs: 56,
+            dl: 42,
+            da: 42,
+            db: 42,
+            de: 42,
+            mi: 42
+        };
+
+        return compactWidths[col.dataIndex] || col.width;
+    },
+
+    getMeasurementColumnWidth: function(col) {
+        return this.getMeasurementEvaluationCompact() ? this.getCompactMeasurementColumnWidth(col) : col.width;
+    },
+
+    onMeasurementEvaluationToggleTap: function(e) {
+        e.stopEvent();
+        this.setMeasurementEvaluationCompact(!this.getMeasurementEvaluationCompact());
+        this.syncMeasurementEvaluationColumns();
+    },
+
+    updateMeasurementEvaluationCompact: function() {
+        this.syncMeasurementEvaluationColumns();
+    },
+
+    syncMeasurementEvaluationColumns: function() {
+        var me = this;
+
+        if (!me.isInitialized || !me.query) return;
+
+        me.query('column').forEach(function(col) {
+            if (col.measurementGroupHeader && col.setText) {
+                col.setText(me.getMeasurementEvaluationHeaderText());
+            }
+
+            if (col.measurementEvaluationColumn && col.setWidth) {
+                col.setWidth(me.getMeasurementEvaluationCompact() ? col.compactWidth : col.expandedWidth);
+            }
+        });
     },
 
     buildColumns: function(maxRound) {
@@ -112,11 +187,16 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
                     hidden: roundNum !== maxRound,
                     columns: [
                         {
-                            text: 'Measurement Evaluation',
+                            text: me.getMeasurementEvaluationHeaderText(),
                             round: roundNum,
+                            measurementGroupHeader: true,
                             columns: measureCols.map(function(col) {
                                 var newCol = Ext.apply({}, col);
                                 newCol.round = roundNum;
+                                newCol.measurementEvaluationColumn = true;
+                                newCol.expandedWidth = col.width;
+                                newCol.compactWidth = me.getCompactMeasurementColumnWidth(col);
+                                newCol.width = me.getMeasurementColumnWidth(col);
                                 newCol.cell = { encodeHtml: false };
                                 return newCol;
                             })
