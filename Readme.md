@@ -68,6 +68,11 @@ Pop-Location
 `robocopy` exit codes from 0 through 7 are successful outcomes; only 8 or higher
 indicates a copy failure.
 
+Wait for `cordova build` to finish. A clean Android release build can take several
+minutes. Do not interrupt the command and do not replace it with a direct
+`gradlew assembleRelease` invocation: Cordova's prepare step generates the Android
+package namespace and launch activity configuration required for an in-place update.
+
 The signed APK is produced at:
 
 ```text
@@ -75,12 +80,20 @@ cordova/platforms/android/app/build/outputs/apk/release/CprMobile.apk
 ```
 
 Copy it to `release/CprMobile_v<version>.apk`. Verify the version from
-`output-metadata.json`, and verify Android signing with `apksigner`:
+`output-metadata.json`, confirm the package is `org.apache.cordova.hellocordova`,
+and verify Android signing with `aapt` and `apksigner`:
 
 ```powershell
+& "$env:ANDROID_HOME\build-tools\<build-tools-version>\aapt.exe" dump badging `
+  cordova\platforms\android\app\build\outputs\apk\release\CprMobile.apk
+
 & "$env:ANDROID_HOME\build-tools\<build-tools-version>\apksigner.bat" verify --verbose `
   cordova\platforms\android\app\build\outputs\apk\release\CprMobile.apk
 ```
+
+The package name must remain `org.apache.cordova.hellocordova`. If it differs, do
+not distribute the APK: Android will treat it as a separate app and it may fail to
+launch if the package and generated `MainActivity` do not match.
 
 ### Recovery for a failed Android build
 

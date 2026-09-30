@@ -5,11 +5,17 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
     controller: 'projectgrid',
 
     scrollable: {
+        // 네이티브 스크롤의 관성 효과를 사용하지 않고 그리드 전용 스크롤러를 사용한다.
+        type: 'virtual',
         direction: 'both',
-        directionLock: false
+        directionLock: false,
+        // 범위를 넘는 드래그도 즉시 경계에 고정해 되돌림 애니메이션을 없앤다.
+        outOfBoundRestrictFactor: 0
     },
     
-    variableHeights: true,
+    // 모든 행은 project-grid CSS에서 74px로 고정한다. 가상 스크롤이 행 높이를
+    // 다시 측정하면 관성 스크롤이 끝날 때 보정 위치로 되감길 수 있으므로 비활성화한다.
+    variableHeights: false,
 
     listeners: {
         childtap: 'onProjectGridChildTap',
@@ -26,7 +32,7 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         type: 'store',
         pageSize: 50,
         fields: [
-            'bd_idx', 'bd_subject', 'bd_data', 'partNumber', 'assyTrim', 'partName2',
+            'bd_idx', 'bd_subject', 'bd_data', 'partNumber', 'assyTrim', 'partName2', 'colorCode',
             'assemblyCo', 'rawMaterialCo', 'gross', 'iiiObs', 'dl', 'da', 'db', 'de', 'mi',
             'dlVisual1', 'daVisual1', 'dbVisual1', 'remarksVisual', 'resultVisual',
             'round1', 'round2', 'round3', 'round4', 'round5', 'round6', 'round7', 'round8', 'round9', 'round10', 'round11', 'round12', 'round13',
@@ -73,6 +79,7 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
         Ext.grid.Grid.prototype.initialize.apply(this, arguments);
         
         CasMobile.activeTab = this;
+        me.disableScrollAnimation();
         me.buildColumns(me.getMaxRound());
 
         me.element.on({
@@ -81,6 +88,23 @@ Ext.define('CasMobile.view.project.ProjectGrid', {
             },
             delegate: '.project-round-toggle-column'
         });
+    },
+
+    disableScrollAnimation: function() {
+        var scroller = this.getScrollable && this.getScrollable();
+
+        if (!scroller || scroller.scrollAnimationDisabled) {
+            return;
+        }
+
+        // VirtualScroller는 dragend에 getAnimationEasing 결과가 있을 때만
+        // 모멘텀/바운스 애니메이션을 실행한다.
+        scroller.getAnimationEasing = Ext.emptyFn;
+        scroller.scrollAnimationDisabled = true;
+
+        if (scroller.stopAnimation) {
+            scroller.stopAnimation();
+        }
     },
 
     // Handle updates when maxRound changes (e.g. after sync or project selection)

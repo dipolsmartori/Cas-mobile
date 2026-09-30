@@ -75,7 +75,7 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationWindowController', {
         }
 
         const store = Ext.create('Ext.data.Store', {
-            fields: ['ca_id', 'ca_name', 'bd_refer', 'bd_idx', 'modelName', 'round', 'partId', 'partName', 'assemblyCo', 'rawMaterialCo', 'type', 'roundJson', 'checked'],
+            fields: ['ca_id', 'ca_name', 'bd_refer', 'bd_idx', 'modelName', 'round', 'partId', 'partName', 'colorCode', 'assemblyCo', 'rawMaterialCo', 'type', 'roundJson', 'checked'],
             listeners: {
                 datachanged: this.onStoreDataChanged,
                 update: this.onStoreUpdate,
@@ -408,6 +408,7 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationWindowController', {
             round: roundJson.round,
             partId: partId,
             partName: record.get('partName2') || record.get('part_nm') || '',
+            colorCode: record.get('colorCode') || record.get('c_colorCode') || '',
             roundJson: roundJson,
             mainRecord: record // 🆙🆙🆙 Keep reference to update main grid store
         });

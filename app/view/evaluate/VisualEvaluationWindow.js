@@ -128,6 +128,11 @@ Ext.define('CasMobile.view.evaluate.VisualEvaluationWindow', {
                             width: 80,
                         },
                         {
+                            dataIndex: 'colorCode',
+                            text: 'COLOR CODE',
+                            width: 110,
+                        },
+                        {
                             dataIndex: 'partName',
                             text: 'PART',
                             flex: 1,

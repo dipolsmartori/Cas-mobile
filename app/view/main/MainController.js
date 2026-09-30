@@ -301,7 +301,7 @@
                     proxy: 'memory',
                     pageSize: data.length,
                     fields: [
-                        'bd_idx', 'bd_subject', 'bd_data', 'partNumber', 'assyTrim', 'partName2',
+                        'bd_idx', 'bd_subject', 'bd_data', 'partNumber', 'assyTrim', 'partName2', 'colorCode',
                         'assemblyCo', 'rawMaterialCo', 'gross', 'iiiObs', 'dl', 'da', 'db', 'de', 'mi',
                         'dlVisual1', 'daVisual1', 'dbVisual1', 'remarksVisual', 'resultVisual',
                         'round1', 'round2', 'round3', 'round4', 'round5', 'round6', 'round7', 'round8', 'round9', 'round10', 'round11', 'round12', 'round13',
@@ -324,32 +324,29 @@
         const containerRow = tab.down('#roundBtnRow');
         if (containerRow) containerRow.destroy();
 
-        const color = window.isOnline ? siteInfo.onlineColor : siteInfo.offlineColor;
         const items = [{
             xtype: 'component',
-            width: 40,
-            height: 40,
-            itemId: 'selectedRound',
-            style: {
-                backgroundColor: color,
-                borderRadius: '20px',
-                marginRight: '20px',
-                color: 'white',
-                fontSize: '18px',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center'
-            },
-            html: maxRound
+            cls: 'round-tab-label',
+            html: 'Round'
         }];
 
         const switchRound = function (btn) {
             const grid = tab.down('projectgrid');
             if (!grid) return;
 
+            // 라운드를 빠르게 연속 전환할 때 이전 전환의 지연 스크롤이
+            // 새 컬럼 레이아웃을 다시 이동시키지 않도록 전환 번호를 관리한다.
+            const roundSwitchVersion = (grid._roundSwitchVersion || 0) + 1;
+            grid._roundSwitchVersion = roundSwitchVersion;
+
             const r = btn.round;
-            const label = btn.up().down('#selectedRound');
-            if (label) label.setHtml(r);
+            tab.query('button').forEach(function (roundBtn) {
+                if (!roundBtn.round) {
+                    return;
+                }
+
+                roundBtn.toggleCls('round-tab-active', roundBtn.round === r);
+            });
 
             grid.query('column').forEach(function (col) {
                 const colRound = col.round;
@@ -363,13 +360,21 @@
             });
 
             Ext.defer(function () {
+                if (grid.destroyed || grid._roundSwitchVersion !== roundSwitchVersion) {
+                    return;
+                }
+
                 const scroller = grid.getScrollable();
                 if (scroller) {
                     const y = scroller.getPosition().y;
                     const maxX = scroller.getMaxPosition().x;
-                    scroller.scrollTo(maxX, y, { animation: true });
+
+                    // 컬럼 숨김/표시가 완료된 뒤 최종 위치를 즉시 적용한다.
+                    // 애니메이션은 레이아웃 재계산과 겹쳐 끝에서 반대 방향으로
+                    // 되감기는 현상을 만들 수 있다.
+                    scroller.scrollTo(maxX, y, { animation: false });
                 }
-            }, 150);
+            }, 0);
         };
 
         for (let i = 1; i <= maxRound; i++) {
@@ -377,11 +382,10 @@
                 xtype: 'button',
                 text: i.toString(),
                 round: i,
-                ui: 'action',
-                margin: '0 5',
-                width: 40,
-                height: 40,
-                cls: 'round-btn',
+                ui: 'plain',
+                width: 32,
+                height: 32,
+                cls: 'round-tab' + (i === maxRound ? ' round-tab-active' : ''),
                 handler: switchRound
             });
         }
@@ -390,11 +394,10 @@
             items.push({
                 xtype: 'button',
                 iconCls: 'x-fa fa-plus',
-                ui: 'action',
-                margin: '0 5',
-                width: 40,
-                height: 40,
-                cls: 'round-btn',
+                ui: 'plain',
+                width: 32,
+                height: 32,
+                cls: 'round-tab round-tab-add',
                 handler: function (btn) {
                     const grid = tab.down('projectgrid');
                     if (!grid) return;
@@ -423,9 +426,11 @@
         tab.insert(0, {
             xtype: 'container',
             itemId: 'roundBtnRow',
+            cls: 'round-tabbar',
             width: '100%',
             layout: { type: 'hbox', align: 'center' },
-            padding: '10 10 10 10',
+            height: 36,
+            padding: '2 10',
             items: [{
                 xtype: 'container',
                 width: 50
@@ -438,18 +443,18 @@
             }, { // 스토어 초기화
                 xtype: 'button',
                 iconCls: 'x-fa fas fa-sync-alt',
-                ui: 'action',
-                width: 40,
-                height: 40,
-                cls: 'round-btn',
+                ui: 'plain',
+                width: 32,
+                height: 32,
+                cls: 'round-tab-control',
                 handler: 'onClearSearchFilter'
             }, {// 검색
                 xtype: 'button',
                 iconCls: 'x-fa fa-search',
-                ui: 'action',
-                width: 40,
-                height: 40,
-                cls: 'round-btn',
+                ui: 'plain',
+                width: 32,
+                height: 32,
+                cls: 'round-tab-control',
                 handler: 'onSearch'
             }]
         });

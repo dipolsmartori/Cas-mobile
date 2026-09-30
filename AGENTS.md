@@ -41,6 +41,13 @@
 - 테스트를 실행할 수 없으면 무엇을 검증하지 못했는지 문서화합니다.
 - UI 변경 시 현실적인 수동 검증 시나리오를 최소 1개 포함합니다.
 
+## Android 릴리스 빌드
+- 릴리스 순서는 `sencha app build production` → `build\production\CasMobile`을 `cordova\www`로 복사 → `cordova build android --release --buildConfig=build.json`으로 고정합니다.
+- APK 생성에는 수 분이 걸릴 수 있으므로 Cordova 명령이 완료될 때까지 중단하거나 직접 Gradle 명령으로 우회하지 않습니다.
+- 직접 `gradlew assembleRelease`를 실행하면 Cordova의 준비 단계가 생략되어 패키지 ID와 `MainActivity`가 불일치할 수 있습니다. 반드시 Cordova 명령으로 빌드합니다.
+- 배포 전 APK의 패키지 ID가 `org.apache.cordova.hellocordova`이고 버전 코드가 증가했는지 확인합니다. 다른 패키지 ID의 APK는 기존 앱을 업데이트하지 않고 새 앱으로 설치됩니다.
+- `Unable to delete directory` 오류가 발생하면 Gradle 데몬을 중지하고 `cordova/platforms/android/app/build`, `cordova/platforms/android/CordovaLib/build` 생성 폴더만 제거한 후 표준 Cordova 빌드를 다시 실행합니다.
+
 ## Git 및 변경 위생
 - 관련 없는 로컬 변경은 되돌리지 않습니다.
 - 커밋은 의도가 명확한 원자 단위로 유지합니다.

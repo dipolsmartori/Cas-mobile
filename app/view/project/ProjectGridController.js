@@ -314,32 +314,17 @@ Ext.define('CasMobile.view.project.ProjectGridController', {
         return '<span title="' + value + '">' + displayVal + '</span>';
     },
 
-    // Render measurement cell with tolerance checking and multi‑round values
+    // Render measurement cell with multi-round values.
+    // 측정값은 오차 범위와 관계없이 기본 텍스트 색상으로 표시한다.
     renderMeasureCell: function (value, record, dataIndex, cell, column) {
         const roundInfo = this.getRoundInfo(record, column.round);
         if (!roundInfo) return '';
-        const checkTolerance = function (k, v) {
-            if (v === null || v === undefined || v === '' || v === '&nbsp;') return true;
-            const num = parseFloat(v);
-            if (isNaN(num)) return true;
-            switch (k) {
-                case 'de': return num <= 0.41;
-                case 'dl': return num > -0.35 && num < 0.35;
-                case 'da': return num > -0.15 && num < 0.15;
-                case 'db': return num > -0.15 && num < 0.15;
-                default: return true;
-            }
+        const formatVal = function (v) {
+            return v || '&nbsp;';
         };
-        const formatVal = function (k, v) {
-            const finalV = v || '&nbsp;';
-            if (!checkTolerance(k, v)) {
-                return '<span style="color:red;font-weight:bold;">' + finalV + '</span>';
-            }
-            return finalV;
-        };
-        const r1 = formatVal(dataIndex, roundInfo[dataIndex + '1']);
-        const r2 = formatVal(dataIndex, roundInfo[dataIndex + '2']);
-        const r3 = formatVal(dataIndex, roundInfo[dataIndex + '3']);
+        const r1 = formatVal(roundInfo[dataIndex + '1']);
+        const r2 = formatVal(roundInfo[dataIndex + '2']);
+        const r3 = formatVal(roundInfo[dataIndex + '3']);
         return '<div style="width:100%;border-bottom:1px dotted black">' + r1 + '</div>' +
             '<div style="width:100%;border-bottom:1px dotted black">' + r2 + '</div>' +
             '<div style="width:100%">' + r3 + '</div>';
